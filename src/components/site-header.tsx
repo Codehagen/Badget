@@ -1,6 +1,7 @@
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { ModeSwitcher } from "./mode-switcher";
 
 export function SiteHeader() {
   return (
@@ -23,8 +24,13 @@ export function SiteHeader() {
               GitHub
             </a>
           </Button>
+          <Separator
+            orientation="vertical"
+            className="mx-2 data-[orientation=vertical]:h-4"
+          />
+          <ModeSwitcher />
         </div>
       </div>
     </header>
-  )
+  );
 }
