@@ -89,6 +89,44 @@ enum WaitlistStatus {
   EXPIRED // Invitation expired
 }
 
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT_CARD
+  INVESTMENT
+  LOAN
+  MORTGAGE
+  OTHER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum TransactionStatus {
+  RECONCILED
+  NEEDS_CATEGORIZATION
+  NEEDS_REVIEW
+  IN_PROGRESS
+}
+
+enum GoalType {
+  EMERGENCY_FUND
+  SAVINGS
+  DEBT_PAYOFF
+  INVESTMENT
+  OTHER
+}
+
+enum BudgetPeriod {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
 // ---------- AUTHENTICATION LAYER ----------
 // Better-auth models for user authentication and session management
 
@@ -197,7 +235,12 @@ model Family {
   members FamilyMember[]
 
   // Family invitations
-  invitations FamilyInvitation[]
+  invitations      FamilyInvitation[]
+  FinancialAccount FinancialAccount[]
+  Category         Category[]
+  Transaction      Transaction[]
+  Budget           Budget[]
+  Goal             Goal[]
 
   @@map("families")
 }
@@ -269,6 +312,156 @@ model Waitlist {
   @@index([position])
   @@index([createdAt])
   @@map("waitlist")
+}
+
+// ---------- FINANCIAL MODELS ----------
+// Business domain models for financial data management
+
+model FinancialAccount {
+  id            String      @id @default(cuid())
+  name          String // "Chase Checking", "Chase Credit Card"
+  type          AccountType
+  balance       Decimal     @default(0) @db.Decimal(12, 2)
+  currency      String      @default("USD")
+  isActive      Boolean     @default(true)
+  institution   String? // "Chase Bank", "Bank of America"
+  accountNumber String? // Last 4 digits or masked number
+  color         String? // UI color for charts/display
+  description   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Multi-tenant relationship
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  transactions           Transaction[]
+  budgets                Budget[]
+  transferToTransactions Transaction[] @relation("TransferTo")
+
+  @@index([familyId])
+  @@index([familyId, type])
+  @@index([familyId, isActive])
+  @@map("financial_accounts")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String // "Food & Dining", "Transportation"
+  icon        String? // Icon identifier for UI
+  color       String? // UI color
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Category hierarchy (optional parent/child relationship)
+  parentId String?
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  // Multi-tenant relationship
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([familyId, name])
+  @@index([familyId])
+  @@index([familyId, isActive])
+  @@map("categories")
+}
+
+model Transaction {
+  id           String            @id @default(cuid())
+  date         DateTime
+  description  String
+  merchant     String
+  amount       Decimal           @db.Decimal(12, 2)
+  type         TransactionType
+  status       TransactionStatus @default(IN_PROGRESS)
+  notes        String?
+  tags         String[] // JSON array for flexible tagging
+  isReconciled Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  // Relationships
+  accountId  String
+  account    FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   Category?        @relation(fields: [categoryId], references: [id])
+
+  // Multi-tenant relationship (derived from account)
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // Transfer tracking (for transfer transactions)
+  transferToAccountId String?
+  transferToAccount   FinancialAccount? @relation("TransferTo", fields: [transferToAccountId], references: [id])
+
+  @@index([familyId])
+  @@index([familyId, date])
+  @@index([familyId, status])
+  @@index([accountId])
+  @@index([categoryId])
+  @@index([date])
+  @@map("transactions")
+}
+
+model Budget {
+  id             String       @id @default(cuid())
+  name           String
+  amount         Decimal      @db.Decimal(12, 2)
+  period         BudgetPeriod @default(MONTHLY)
+  startDate      DateTime
+  endDate        DateTime?
+  isActive       Boolean      @default(true)
+  description    String?
+  alertThreshold Decimal?     @db.Decimal(5, 2) // Percentage (0.85 = 85%)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relationships
+  categoryId String?
+  category   Category?         @relation(fields: [categoryId], references: [id])
+  accountId  String?
+  account    FinancialAccount? @relation(fields: [accountId], references: [id])
+
+  // Multi-tenant relationship
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([familyId, isActive])
+  @@index([familyId, period])
+  @@map("budgets")
+}
+
+model Goal {
+  id            String    @id @default(cuid())
+  name          String
+  type          GoalType
+  targetAmount  Decimal   @db.Decimal(12, 2)
+  currentAmount Decimal   @default(0) @db.Decimal(12, 2)
+  targetDate    DateTime?
+  isActive      Boolean   @default(true)
+  description   String?
+  color         String? // UI color
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Multi-tenant relationship
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([familyId, isActive])
+  @@index([familyId, type])
+  @@map("goals")
 }
 
 // ---------- INDEXES AND CONSTRAINTS ----------
