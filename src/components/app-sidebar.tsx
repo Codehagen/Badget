@@ -10,7 +10,6 @@ import {
   IconFileDescription,
   IconFolder,
   IconHelp,
-  IconInnerShadowTop,
   IconPigMoney,
   IconSearch,
   IconSettings,
@@ -31,6 +30,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { siteConfig } from "@/lib/config";
 
 const data = {
   user: {
@@ -165,8 +165,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">
+                  {siteConfig.name}
+                </span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
