@@ -1,6 +1,18 @@
 import { SpendingTrendsChart } from "@/components/charts/SpendingTrendsChart";
 
-export function AnalyticsSection() {
+type SpendingTrendsData = {
+  month: string;
+  income: number;
+  expenses: number;
+  savings: number;
+  budget: number;
+}[];
+
+interface AnalyticsSectionProps {
+  data: SpendingTrendsData;
+}
+
+export function AnalyticsSection({ data }: AnalyticsSectionProps) {
   return (
     <div className="lg:col-span-2">
       <div className="border rounded-lg">
@@ -12,7 +24,7 @@ export function AnalyticsSection() {
         </div>
         <div className="p-6 pt-4">
           <div className="h-80">
-            <SpendingTrendsChart />
+            <SpendingTrendsChart data={data} />
           </div>
         </div>
       </div>

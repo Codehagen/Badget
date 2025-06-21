@@ -1,7 +1,37 @@
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow, subHours, subDays } from "date-fns";
 
-export function InsightsSection() {
+type FinancialGoal = {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate?: Date | null;
+  type: string;
+  isActive: boolean;
+};
+
+interface InsightsSectionProps {
+  goals: FinancialGoal[];
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+}
+
+function calculateProgress(current: number, target: number) {
+  return Math.min((current / target) * 100, 100);
+}
+
+export function InsightsSection({ goals }: InsightsSectionProps) {
+  // Find the emergency fund goal for display
+  const emergencyFundGoal = goals.find(
+    (goal) => goal.type === "EMERGENCY_FUND" && goal.isActive
+  );
+
   return (
     <div className="border rounded-lg">
       <div className="p-6 pb-0">
@@ -56,19 +86,33 @@ export function InsightsSection() {
             </div>
           </div>
 
-          <div className="p-3 border rounded-lg">
-            <h4 className="font-medium text-sm mb-1">
-              Emergency Fund Goal: 67% Complete
-            </h4>
-            <p className="text-xs text-muted-foreground mb-2">
-              You&apos;re $2,340 away from your 6-month emergency fund target
-            </p>
-            <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(subDays(new Date(), 1), {
-                addSuffix: true,
-              })}
-            </span>
-          </div>
+          {emergencyFundGoal && (
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium text-sm mb-1">
+                {emergencyFundGoal.name}:{" "}
+                {Math.round(
+                  calculateProgress(
+                    emergencyFundGoal.currentAmount,
+                    emergencyFundGoal.targetAmount
+                  )
+                )}
+                % Complete
+              </h4>
+              <p className="text-xs text-muted-foreground mb-2">
+                You&apos;re{" "}
+                {formatCurrency(
+                  emergencyFundGoal.targetAmount -
+                    emergencyFundGoal.currentAmount
+                )}{" "}
+                away from your target
+              </p>
+              <span className="text-xs text-muted-foreground">
+                {formatDistanceToNow(subDays(new Date(), 1), {
+                  addSuffix: true,
+                })}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

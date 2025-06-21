@@ -56,7 +56,6 @@ import { getCurrentAppUser } from "./user-actions";
 import type {
   TransactionStatus,
   TransactionType,
-  AccountType,
   GoalType,
   BudgetPeriod,
 } from "@/generated/prisma";
@@ -497,7 +496,8 @@ export async function getSpendingTrends(months: number = 6) {
       month,
       income: data.income,
       expenses: data.expenses,
-      net: data.income - data.expenses,
+      savings: Math.max(0, data.income - data.expenses),
+      budget: data.income * 0.7, // Assume 70% of income as budget target
     }));
   } catch (error) {
     console.error("Error fetching spending trends:", error);
@@ -537,19 +537,65 @@ export async function getDashboardData() {
 }
 
 /**
- * Seed the database with sample data for the current user
+ * Reset user's financial data
  */
-export async function seedUserData() {
+export async function resetUserData() {
   const appUser = await getCurrentAppUser();
   if (!appUser) {
     throw new Error("User not authenticated");
   }
 
-  // Check if user already has a family
+  const prisma = getPrismaClient();
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      // Get all families the user belongs to
+      const familyMemberships = await tx.familyMember.findMany({
+        where: { appUserId: appUser.id },
+        include: { family: true },
+      });
+
+      for (const membership of familyMemberships) {
+        const familyId = membership.familyId;
+
+        // Delete all related data for this family
+        await tx.transaction.deleteMany({ where: { familyId } });
+        await tx.budget.deleteMany({ where: { familyId } });
+        await tx.goal.deleteMany({ where: { familyId } });
+        await tx.category.deleteMany({ where: { familyId } });
+        await tx.financialAccount.deleteMany({ where: { familyId } });
+        await tx.familyMember.deleteMany({ where: { familyId } });
+        await tx.family.delete({ where: { id: familyId } });
+      }
+
+      return { success: true };
+    });
+  } catch (error) {
+    console.error("Error resetting user data:", error);
+    throw new Error("Failed to reset user data");
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/**
+ * Seed the database with sample data for the current user
+ */
+export async function seedUserData(resetFirst: boolean = false) {
+  const appUser = await getCurrentAppUser();
+  if (!appUser) {
+    throw new Error("User not authenticated");
+  }
+
+  // If user has existing data and resetFirst is true, reset it first
   if (appUser.familyMemberships.length > 0) {
-    throw new Error(
-      "User already has financial data. Use reset if you want to start over."
-    );
+    if (resetFirst) {
+      await resetUserData();
+    } else {
+      throw new Error(
+        "User already has financial data. Use reset if you want to start over."
+      );
+    }
   }
 
   const prisma = getPrismaClient();
@@ -602,7 +648,7 @@ export async function seedUserData() {
         },
       });
 
-      const savingsAccount = await tx.financialAccount.create({
+      await tx.financialAccount.create({
         data: {
           name: "Chase Savings",
           type: "SAVINGS",
@@ -638,59 +684,224 @@ export async function seedUserData() {
         )
       );
 
-      // Create sample transactions
-      const sampleTransactions = [
-        {
-          date: new Date("2024-01-15"),
-          description: "Starbucks Coffee",
-          merchant: "Starbucks",
-          amount: -5.47,
-          type: "EXPENSE" as TransactionType,
-          status: "RECONCILED" as TransactionStatus,
-          accountId: checkingAccount.id,
-          categoryId: createdCategories.find((c) => c.name === "Food & Dining")
-            ?.id,
-          isReconciled: true,
-        },
-        {
-          date: new Date("2024-01-15"),
-          description: "Salary Deposit",
-          merchant: "Company Inc",
-          amount: 2850.0,
+      // Create comprehensive transaction data including current month
+      const allTransactions = [];
+      const currentDate = new Date();
+
+      // Generate data for current month and past 2 months (3 months total for faster seeding)
+      for (let monthOffset = 0; monthOffset < 3; monthOffset++) {
+        const monthDate = new Date(currentDate);
+        monthDate.setMonth(monthDate.getMonth() - monthOffset);
+
+        // Base monthly income (salary) - always on the 15th
+        const salaryAmount = 6250 + (Math.random() - 0.5) * 500; // 6000-6500 range
+        allTransactions.push({
+          date: new Date(monthDate.getFullYear(), monthDate.getMonth(), 15),
+          description: "Monthly Salary",
+          merchant: "Acme Corporation",
+          amount: salaryAmount,
           type: "INCOME" as TransactionType,
           status: "RECONCILED" as TransactionStatus,
           accountId: checkingAccount.id,
           categoryId: createdCategories.find((c) => c.name === "Salary")?.id,
           isReconciled: true,
+        });
+
+        // Optional freelance income (30% chance)
+        if (Math.random() > 0.7) {
+          allTransactions.push({
+            date: new Date(
+              monthDate.getFullYear(),
+              monthDate.getMonth(),
+              Math.floor(Math.random() * 28) + 1
+            ),
+            description: "Freelance Payment",
+            merchant: "Client XYZ",
+            amount: 500 + Math.random() * 1000,
+            type: "INCOME" as TransactionType,
+            status: "RECONCILED" as TransactionStatus,
+            accountId: checkingAccount.id,
+            categoryId: createdCategories.find((c) => c.name === "Freelance")
+              ?.id,
+            isReconciled: true,
+          });
+        }
+
+        // Monthly expenses with realistic patterns
+        const monthlyExpenses = [
+          // Fixed expenses
+          {
+            category: "Utilities",
+            amount: -120 - Math.random() * 60,
+            count: 1,
+            desc: "Electric Bill",
+          },
+          {
+            category: "Utilities",
+            amount: -80 - Math.random() * 20,
+            count: 1,
+            desc: "Internet Bill",
+          },
+          {
+            category: "Entertainment",
+            amount: -15.99,
+            count: 1,
+            desc: "Netflix",
+          },
+          {
+            category: "Health & Fitness",
+            amount: -49.99,
+            count: 1,
+            desc: "Gym Membership",
+          },
+
+          // Variable expenses (reduced counts for faster seeding)
+          {
+            category: "Groceries",
+            amount: -80 - Math.random() * 40,
+            count: 2,
+            desc: "Grocery Store",
+          },
+          {
+            category: "Food & Dining",
+            amount: -15 - Math.random() * 25,
+            count: 4,
+            desc: "Restaurant",
+          },
+          {
+            category: "Transportation",
+            amount: -45 - Math.random() * 25,
+            count: 2,
+            desc: "Gas Station",
+          },
+          {
+            category: "Entertainment",
+            amount: -25 - Math.random() * 50,
+            count: 1,
+            desc: "Entertainment",
+          },
+        ];
+
+        monthlyExpenses.forEach((expense) => {
+          for (let i = 0; i < expense.count; i++) {
+            const variation = 0.8 + Math.random() * 0.4; // 80% to 120% of base amount
+            allTransactions.push({
+              date: new Date(
+                monthDate.getFullYear(),
+                monthDate.getMonth(),
+                Math.floor(Math.random() * 28) + 1
+              ),
+              description: `${expense.desc} ${i + 1}`,
+              merchant: `${expense.desc} Store`,
+              amount: expense.amount * variation,
+              type: "EXPENSE" as TransactionType,
+              status:
+                Math.random() > 0.05
+                  ? ("RECONCILED" as TransactionStatus)
+                  : ("NEEDS_CATEGORIZATION" as TransactionStatus),
+              accountId:
+                Math.random() > 0.3 ? checkingAccount.id : creditCard.id,
+              categoryId:
+                Math.random() > 0.1
+                  ? createdCategories.find((c) => c.name === expense.category)
+                      ?.id
+                  : null,
+              isReconciled: Math.random() > 0.05,
+            });
+          }
+        });
+
+        // Random additional transactions (reduced for faster seeding)
+        const additionalCount = 2 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < additionalCount; i++) {
+          const randomExpense =
+            monthlyExpenses[Math.floor(Math.random() * monthlyExpenses.length)];
+          allTransactions.push({
+            date: new Date(
+              monthDate.getFullYear(),
+              monthDate.getMonth(),
+              Math.floor(Math.random() * 28) + 1
+            ),
+            description: `Random ${randomExpense.desc}`,
+            merchant: "Various",
+            amount: -20 - Math.random() * 100,
+            type: "EXPENSE" as TransactionType,
+            status:
+              Math.random() > 0.1
+                ? ("RECONCILED" as TransactionStatus)
+                : ("NEEDS_REVIEW" as TransactionStatus),
+            accountId: Math.random() > 0.5 ? checkingAccount.id : creditCard.id,
+            categoryId:
+              Math.random() > 0.2
+                ? createdCategories.find(
+                    (c) => c.name === randomExpense.category
+                  )?.id
+                : null,
+            isReconciled: Math.random() > 0.1,
+          });
+        }
+      }
+
+      // Create all transactions using createMany for better performance
+      await tx.transaction.createMany({
+        data: allTransactions.map((transaction) => ({
+          ...transaction,
+          familyId: family.id,
+          tags: [],
+        })),
+      });
+
+      // Create budgets for the current month
+      const currentMonthStart = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        1
+      );
+      const currentMonthEnd = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
+        0
+      );
+
+      const budgets = [
+        {
+          name: "Monthly Food Budget",
+          amount: 800.0,
+          period: "MONTHLY" as BudgetPeriod,
+          startDate: currentMonthStart,
+          endDate: currentMonthEnd,
+          isActive: true,
+          familyId: family.id,
         },
         {
-          date: new Date("2024-01-14"),
-          description: "Amazon Purchase",
-          merchant: "Amazon",
-          amount: -89.99,
-          type: "EXPENSE" as TransactionType,
-          status: "NEEDS_CATEGORIZATION" as TransactionStatus,
-          accountId: creditCard.id,
-          categoryId: null,
-          isReconciled: true,
+          name: "Transportation Budget",
+          amount: 400.0,
+          period: "MONTHLY" as BudgetPeriod,
+          startDate: currentMonthStart,
+          endDate: currentMonthEnd,
+          isActive: true,
+          familyId: family.id,
+        },
+        {
+          name: "Entertainment Budget",
+          amount: 300.0,
+          period: "MONTHLY" as BudgetPeriod,
+          startDate: currentMonthStart,
+          endDate: currentMonthEnd,
+          isActive: true,
+          familyId: family.id,
         },
       ];
 
-      await Promise.all(
-        sampleTransactions.map((transaction) =>
-          tx.transaction.create({
-            data: {
-              ...transaction,
-              familyId: family.id,
-              tags: [],
-            },
-          })
-        )
-      );
+      for (const budget of budgets) {
+        await tx.budget.create({
+          data: budget,
+        });
+      }
 
-      // Create a financial goal
-      await tx.goal.create({
-        data: {
+      // Create financial goals
+      const goals = [
+        {
           name: "Emergency Fund",
           type: "EMERGENCY_FUND" as GoalType,
           targetAmount: 15000.0,
@@ -700,7 +911,33 @@ export async function seedUserData() {
           color: "#28A745",
           familyId: family.id,
         },
-      });
+        {
+          name: "Vacation Fund",
+          type: "SAVINGS" as GoalType,
+          targetAmount: 5000.0,
+          currentAmount: 1200.0,
+          targetDate: new Date("2024-06-30"),
+          description: "Summer vacation to Europe",
+          color: "#17A2B8",
+          familyId: family.id,
+        },
+        {
+          name: "New Car Down Payment",
+          type: "SAVINGS" as GoalType,
+          targetAmount: 8000.0,
+          currentAmount: 2500.0,
+          targetDate: new Date("2024-09-30"),
+          description: "Down payment for new car",
+          color: "#6F42C1",
+          familyId: family.id,
+        },
+      ];
+
+      for (const goal of goals) {
+        await tx.goal.create({
+          data: goal,
+        });
+      }
 
       return { success: true, familyId: family.id };
     });

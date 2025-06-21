@@ -8,51 +8,79 @@ import {
   IconPigMoney,
 } from "@tabler/icons-react";
 
-// Financial metrics data for Badget dashboard
-const metrics = [
-  {
-    title: "Monthly Income",
-    value: "$6,250",
-    change: "+$250 (+4.2%)",
-    changeType: "positive",
-    period: "vs last month",
-    icon: IconWallet,
-  },
-  {
-    title: "Monthly Expenses",
-    value: "$3,890",
-    change: "-$180 (-4.4%)",
-    changeType: "positive",
-    period: "vs last month",
-    icon: IconCreditCard,
-  },
-  {
-    title: "Net Worth",
-    value: "$45,230",
-    change: "+$2,450 (+5.7%)",
-    changeType: "positive",
-    period: "last 30 days",
-    icon: IconCurrencyDollar,
-  },
-  {
-    title: "Savings Rate",
-    value: "37.8%",
-    change: "+3.2% (+9.2%)",
-    changeType: "positive",
-    period: "vs last month",
-    icon: IconPigMoney,
-  },
-  {
-    title: "Budget Remaining",
-    value: "$1,840",
-    change: "+$320 (+21.1%)",
-    changeType: "positive",
-    period: "this month",
-    icon: IconTarget,
-  },
-];
+type DashboardMetrics = {
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  netWorth: number;
+  savingsRate: number;
+  budgetRemaining: number;
+  accountBalances: {
+    checking: number;
+    savings: number;
+    creditCard: number;
+    total: number;
+  };
+};
 
-export function MetricsSection() {
+interface MetricsSectionProps {
+  data: DashboardMetrics;
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+}
+
+function formatPercentage(value: number) {
+  return `${value.toFixed(1)}%`;
+}
+
+export function MetricsSection({ data }: MetricsSectionProps) {
+  const metrics = [
+    {
+      title: "Monthly Income",
+      value: formatCurrency(data.monthlyIncome),
+      change: "+$250 (+4.2%)", // TODO: Calculate from previous period
+      changeType: "positive" as const,
+      period: "vs last month",
+      icon: IconWallet,
+    },
+    {
+      title: "Monthly Expenses",
+      value: formatCurrency(data.monthlyExpenses),
+      change: "-$180 (-4.4%)", // TODO: Calculate from previous period
+      changeType: "positive" as const,
+      period: "vs last month",
+      icon: IconCreditCard,
+    },
+    {
+      title: "Net Worth",
+      value: formatCurrency(data.netWorth),
+      change: "+$2,450 (+5.7%)", // TODO: Calculate from previous period
+      changeType: "positive" as const,
+      period: "last 30 days",
+      icon: IconCurrencyDollar,
+    },
+    {
+      title: "Savings Rate",
+      value: formatPercentage(data.savingsRate),
+      change: "+3.2% (+9.2%)", // TODO: Calculate from previous period
+      changeType: "positive" as const,
+      period: "vs last month",
+      icon: IconPigMoney,
+    },
+    {
+      title: "Budget Remaining",
+      value: formatCurrency(data.budgetRemaining),
+      change: "+$320 (+21.1%)", // TODO: Calculate from previous period
+      changeType: "positive" as const,
+      period: "this month",
+      icon: IconTarget,
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       {metrics.map((metric, index) => {

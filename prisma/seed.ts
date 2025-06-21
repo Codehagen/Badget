@@ -437,6 +437,16 @@ async function main() {
       color: "#6F42C1",
       familyId: family.id,
     },
+    {
+      name: "Home Renovation",
+      type: GoalType.SAVINGS,
+      targetAmount: 25000.0,
+      currentAmount: 5750.0,
+      targetDate: new Date("2025-03-31"),
+      description: "Kitchen and bathroom renovation",
+      color: "#FFC107",
+      familyId: family.id,
+    },
   ];
 
   for (const goal of goals) {
@@ -447,40 +457,167 @@ async function main() {
 
   console.log("✅ Created goals");
 
-  // Create some additional sample data for the past month
-  const additionalTransactions = Array.from({ length: 30 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
+  // Create comprehensive monthly data for the past 8 months
+  const monthlyData = [];
+  const currentDate = new Date();
 
-    return {
-      date,
-      description: `Sample Transaction ${i + 1}`,
-      merchant: `Merchant ${i + 1}`,
-      amount: Math.random() * 200 - 100, // Random amount between -100 and 100
-      type:
-        Math.random() > 0.7 ? TransactionType.INCOME : TransactionType.EXPENSE,
-      status:
-        Math.random() > 0.1
-          ? TransactionStatus.RECONCILED
-          : TransactionStatus.NEEDS_CATEGORIZATION,
-      accountId: Math.random() > 0.5 ? checkingAccount.id : creditCard.id,
-      categoryId:
-        Math.random() > 0.2
-          ? categories[Math.floor(Math.random() * categories.length)].id
-          : null,
-      isReconciled: Math.random() > 0.1,
-      familyId: family.id,
-      tags: [],
-    };
-  });
+  // Generate data for each of the past 8 months
+  for (let monthOffset = 0; monthOffset < 8; monthOffset++) {
+    const monthDate = new Date(currentDate);
+    monthDate.setMonth(monthDate.getMonth() - monthOffset);
 
-  for (const transaction of additionalTransactions) {
+    // Base monthly income (salary)
+    const salaryAmount = 6250 + (Math.random() - 0.5) * 500; // 6000-6500 range
+    monthlyData.push({
+      date: new Date(monthDate.getFullYear(), monthDate.getMonth(), 15),
+      description: "Monthly Salary",
+      merchant: "Acme Corporation",
+      amount: salaryAmount,
+      type: TransactionType.INCOME,
+      status: TransactionStatus.RECONCILED,
+      accountId: checkingAccount.id,
+      categoryId: "cat-salary",
+      isReconciled: true,
+    });
+
+    // Optional freelance income (30% chance)
+    if (Math.random() > 0.7) {
+      monthlyData.push({
+        date: new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          Math.floor(Math.random() * 28) + 1
+        ),
+        description: "Freelance Payment",
+        merchant: "Client XYZ",
+        amount: 500 + Math.random() * 1000,
+        type: TransactionType.INCOME,
+        status: TransactionStatus.RECONCILED,
+        accountId: checkingAccount.id,
+        categoryId: "cat-freelance",
+        isReconciled: true,
+      });
+    }
+
+    // Monthly expenses with realistic patterns
+    const monthlyExpenses = [
+      // Fixed expenses
+      {
+        category: "cat-utilities",
+        amount: -120 - Math.random() * 60,
+        count: 1,
+        desc: "Electric Bill",
+      },
+      {
+        category: "cat-utilities",
+        amount: -80 - Math.random() * 20,
+        count: 1,
+        desc: "Internet Bill",
+      },
+      {
+        category: "cat-entertainment",
+        amount: -15.99,
+        count: 1,
+        desc: "Netflix",
+      },
+      {
+        category: "cat-health",
+        amount: -49.99,
+        count: 1,
+        desc: "Gym Membership",
+      },
+
+      // Variable expenses
+      {
+        category: "cat-groceries",
+        amount: -80 - Math.random() * 40,
+        count: 4,
+        desc: "Grocery Store",
+      },
+      {
+        category: "cat-food",
+        amount: -15 - Math.random() * 25,
+        count: 8,
+        desc: "Restaurant",
+      },
+      {
+        category: "cat-transport",
+        amount: -45 - Math.random() * 25,
+        count: 3,
+        desc: "Gas Station",
+      },
+      {
+        category: "cat-entertainment",
+        amount: -25 - Math.random() * 50,
+        count: 2,
+        desc: "Entertainment",
+      },
+    ];
+
+    monthlyExpenses.forEach((expense) => {
+      for (let i = 0; i < expense.count; i++) {
+        const variation = 0.8 + Math.random() * 0.4; // 80% to 120% of base amount
+        monthlyData.push({
+          date: new Date(
+            monthDate.getFullYear(),
+            monthDate.getMonth(),
+            Math.floor(Math.random() * 28) + 1
+          ),
+          description: `${expense.desc} ${i + 1}`,
+          merchant: `${expense.desc} Store`,
+          amount: expense.amount * variation,
+          type: TransactionType.EXPENSE,
+          status:
+            Math.random() > 0.05
+              ? TransactionStatus.RECONCILED
+              : TransactionStatus.NEEDS_CATEGORIZATION,
+          accountId: Math.random() > 0.3 ? checkingAccount.id : creditCard.id,
+          categoryId: Math.random() > 0.1 ? expense.category : null,
+          isReconciled: Math.random() > 0.05,
+        });
+      }
+    });
+
+    // Random additional transactions
+    const additionalCount = 5 + Math.floor(Math.random() * 10);
+    for (let i = 0; i < additionalCount; i++) {
+      const randomExpense =
+        monthlyExpenses[Math.floor(Math.random() * monthlyExpenses.length)];
+      monthlyData.push({
+        date: new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          Math.floor(Math.random() * 28) + 1
+        ),
+        description: `Random ${randomExpense.desc}`,
+        merchant: "Various",
+        amount: -20 - Math.random() * 100,
+        type: TransactionType.EXPENSE,
+        status:
+          Math.random() > 0.1
+            ? TransactionStatus.RECONCILED
+            : TransactionStatus.NEEDS_REVIEW,
+        accountId: Math.random() > 0.5 ? checkingAccount.id : creditCard.id,
+        categoryId: Math.random() > 0.2 ? randomExpense.category : null,
+        isReconciled: Math.random() > 0.1,
+      });
+    }
+  }
+
+  // Create all the monthly transactions
+  for (const transaction of monthlyData) {
     await prisma.transaction.create({
-      data: transaction,
+      data: {
+        ...transaction,
+        familyId: family.id,
+        tags: [],
+      },
     });
   }
 
-  console.log("✅ Created additional sample transactions");
+  console.log(
+    `✅ Created ${monthlyData.length} monthly transactions spanning 8 months`
+  );
 
   console.log("🎉 Database seeded successfully!");
 }

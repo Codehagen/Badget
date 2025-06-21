@@ -1,9 +1,22 @@
 "use client";
 
 import React from "react";
-import { ComboChart, ComboChartEventProps } from "@/components/ComboChart";
+import { ComboChart } from "@/components/ComboChart";
 
-const spendingChartData = [
+type SpendingTrendsData = {
+  month: string;
+  income: number;
+  expenses: number;
+  savings: number;
+  budget: number;
+}[];
+
+interface SpendingTrendsChartProps {
+  data?: SpendingTrendsData;
+}
+
+// Default fallback data
+const defaultSpendingChartData = [
   {
     date: "Jan 24",
     Spending: 3890,
@@ -62,21 +75,29 @@ const spendingChartData = [
   },
 ];
 
-export const SpendingTrendsChart = () => {
-  const [value, setValue] = React.useState<ComboChartEventProps>(null);
+export const SpendingTrendsChart = ({ data }: SpendingTrendsChartProps) => {
+  // Transform the data if provided, otherwise use default
+  const chartData = data
+    ? data.map((item) => ({
+        date: item.month,
+        Spending: item.expenses,
+        Budget: item.budget,
+        Income: item.income,
+        SavingsRate: item.savings > 0 ? (item.savings / item.income) * 100 : 0,
+      }))
+    : defaultSpendingChartData;
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0">
         <ComboChart
-          data={spendingChartData}
+          data={chartData}
           index="date"
           enableBiaxial={true}
-          onValueChange={(v) => setValue(v)}
           barSeries={{
             categories: ["Income", "Spending"],
             yAxisLabel: "Amount ($)",
-            colors: ["green", "red"],
+            colors: ["emerald", "red"],
           }}
           lineSeries={{
             categories: ["Budget"],
