@@ -32,7 +32,7 @@ export function TransactionManagementSection({
     date: tx.date.toISOString(),
     description: tx.description,
     merchant: tx.account.name, // Using account name as merchant for now
-    amount: tx.type === "EXPENSE" ? -tx.amount : tx.amount,
+    amount: tx.amount, // Keep the amount as is since expenses are already negative in DB
     type: tx.type.toLowerCase() as "income" | "expense" | "transfer",
     category: tx.category?.name || "",
     account: tx.account.name,
