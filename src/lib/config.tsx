@@ -43,9 +43,9 @@ export const siteConfig = {
     "Expense Insights",
   ],
   links: {
-    email: "support@badget.app",
-    twitter: "https://twitter.com/codehagen",
-    discord: "https://discord.gg/codehagen",
+    email: "support@badget.tech",
+    twitter: "https://tx.com/codehagen",
+    discord: "https://discord.gg/TK7k6uY4",
     github: "https://github.com/codehagen",
     instagram: "https://instagram.com/codehagen",
   },
