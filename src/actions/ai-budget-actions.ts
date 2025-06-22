@@ -11,10 +11,7 @@
 
 import { PrismaClient } from "@/generated/prisma";
 import { getCurrentAppUser } from "./user-actions";
-import type {
-  TransactionStatus,
-  TransactionType,
-} from "@/generated/prisma";
+import type { TransactionStatus, TransactionType } from "@/generated/prisma";
 import OpenAI from "openai";
 
 // Instantiate Prisma per request
@@ -55,12 +52,19 @@ export type CategoryForecast = {
  * @returns Recommended budget amounts and optional AI summary
  */
 export async function generateBudgetRecommendations(
-  months: number = 3,
+  months: number = 3
 ): Promise<BudgetRecommendationResult> {
+  console.log(
+    "🎯 generateBudgetRecommendations - Starting with months:",
+    months
+  );
+
   const appUser = await getCurrentAppUser();
+  console.log("👤 User found:", appUser ? "Yes" : "No");
   if (!appUser) throw new Error("User not authenticated");
 
   const familyId = appUser.familyMemberships[0]?.familyId;
+  console.log("👨‍👩‍👧‍👦 Family ID:", familyId);
   if (!familyId) throw new Error("No family found for user");
 
   const prisma = getPrismaClient();
@@ -71,6 +75,7 @@ export async function generateBudgetRecommendations(
     startDate.setMonth(endDate.getMonth() - months);
 
     // Sum expenses by category for the selected period
+    console.log("📊 Querying transactions from", startDate, "to", endDate);
     const spendByCategory = await prisma.transaction.groupBy({
       by: ["categoryId"],
       where: {
@@ -83,6 +88,8 @@ export async function generateBudgetRecommendations(
       _sum: { amount: true },
     });
 
+    console.log("💰 Found spending in", spendByCategory.length, "categories");
+
     // Fetch category names
     const categoryIds = spendByCategory.map((s) => s.categoryId!);
     const categories = await prisma.category.findMany({
@@ -90,17 +97,22 @@ export async function generateBudgetRecommendations(
       select: { id: true, name: true },
     });
 
+    console.log("🏷️ Category names loaded:", categories.length);
+
     const recommendations: CategoryBudgetRecommendation[] = spendByCategory.map(
       (entry) => {
         const category = categories.find((c) => c.id === entry.categoryId);
-        const avgMonthly = Number(entry._sum.amount || 0) / months;
+        const totalSpent = Number(entry._sum.amount || 0);
+        const avgMonthly = totalSpent / months;
+        // Convert to positive amount for budget calculation (expenses are stored as negative)
+        const avgMonthlyPositive = Math.abs(avgMonthly);
         return {
           categoryId: entry.categoryId!,
           categoryName: category?.name || "Uncategorized",
-          averageMonthlySpend: Number(avgMonthly.toFixed(2)),
-          recommendedBudget: Number((avgMonthly * 1.05).toFixed(2)), // add 5% buffer
+          averageMonthlySpend: Number(avgMonthly.toFixed(2)), // Keep original for display
+          recommendedBudget: Number((avgMonthlyPositive * 1.05).toFixed(2)), // add 5% buffer to positive amount
         };
-      },
+      }
     );
 
     // Adjust budgets for active savings goals
@@ -126,22 +138,32 @@ export async function generateBudgetRecommendations(
           (goal.targetDate.getFullYear() - now.getFullYear()) * 12 +
           (goal.targetDate.getMonth() - now.getMonth());
         if (monthsLeft <= 0) return sum;
-        const remaining = Number(goal.targetAmount) - Number(goal.currentAmount);
+        const remaining =
+          Number(goal.targetAmount) - Number(goal.currentAmount);
         return sum + Math.max(0, remaining / monthsLeft);
       }, 0);
 
-      const perCategoryAdjustment = totalGoalAllocation / recommendations.length;
+      const perCategoryAdjustment =
+        totalGoalAllocation / recommendations.length;
       recommendations.forEach((rec) => {
         rec.recommendedBudget = Number(
-          (rec.recommendedBudget - perCategoryAdjustment).toFixed(2),
+          (rec.recommendedBudget - perCategoryAdjustment).toFixed(2)
         );
         if (rec.recommendedBudget < 0) rec.recommendedBudget = 0;
       });
     }
 
+    console.log("📝 Generated", recommendations.length, "recommendations");
+    console.log("💰 Sample calculation:", {
+      firstCategory: recommendations[0]?.categoryName,
+      averageSpend: recommendations[0]?.averageMonthlySpend,
+      recommendedBudget: recommendations[0]?.recommendedBudget,
+    });
+
     // Generate a summary and explanations with OpenAI (optional)
     let summary: string | null = null;
     try {
+      console.log("🤖 Calling OpenAI for summary and explanations...");
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
       const prompt = `Provide a short budgeting summary and a one-sentence explanation for each category's recommended budget.\n${recommendations
         .map((r) => `${r.categoryName}: $${r.recommendedBudget}`)
@@ -156,6 +178,7 @@ export async function generateBudgetRecommendations(
       });
 
       summary = chat.choices[0]?.message?.content?.trim() || null;
+      console.log("🤖 OpenAI response received, length:", summary?.length || 0);
 
       // Parse explanations from the response if provided in lines
       const lines = summary?.split("\n") || [];
@@ -163,16 +186,17 @@ export async function generateBudgetRecommendations(
         const [name, ...rest] = line.split(":");
         const explanation = rest.join(":").trim();
         const rec = recommendations.find(
-          (r) => r.categoryName.toLowerCase() === name.toLowerCase(),
+          (r) => r.categoryName.toLowerCase() === name.toLowerCase()
         );
         if (rec && explanation) {
           rec.explanation = explanation;
         }
       });
     } catch (aiError) {
-      console.error("AI summary failed:", aiError);
+      console.error("❌ AI summary failed:", aiError);
     }
 
+    console.log("✅ generateBudgetRecommendations completed successfully");
     return { recommendations, summary };
   } catch (error) {
     console.error("Error generating budget recommendations:", error);
@@ -187,12 +211,15 @@ export async function generateBudgetRecommendations(
  * against the historical average for its category.
  */
 export async function detectTransactionAnomalies(
-  months: number = 3,
+  months: number = 3
 ): Promise<TransactionAnomaly[]> {
+  console.log("🔍 detectTransactionAnomalies - Starting with months:", months);
+
   const appUser = await getCurrentAppUser();
   if (!appUser) throw new Error("User not authenticated");
 
   const familyId = appUser.familyMemberships[0]?.familyId;
+  console.log("👨‍👩‍👧‍👦 Family ID for anomalies:", familyId);
   if (!familyId) throw new Error("No family found for user");
 
   const prisma = getPrismaClient();
@@ -202,9 +229,8 @@ export async function detectTransactionAnomalies(
     const startDate = new Date();
     startDate.setMonth(endDate.getMonth() - months);
 
-    // Fetch historical expenses grouped by category
-    const spendByCategory = await prisma.transaction.groupBy({
-      by: ["categoryId"],
+    // Fetch historical expenses and calculate statistics manually
+    const transactions = await prisma.transaction.findMany({
       where: {
         familyId,
         type: "EXPENSE" as TransactionType,
@@ -212,19 +238,32 @@ export async function detectTransactionAnomalies(
         date: { gte: startDate, lte: endDate },
         categoryId: { not: null },
       },
-      _avg: { amount: true },
-      _stddev: { amount: true },
+      select: {
+        amount: true,
+        categoryId: true,
+      },
     });
 
-    const categoryStats = new Map(
-      spendByCategory.map((entry) => [
-        entry.categoryId!,
-        {
-          avg: Number(entry._avg.amount || 0),
-          std: Number(entry._stddev.amount || 0),
-        },
-      ]),
-    );
+    // Calculate average and standard deviation for each category
+    const categoryData = new Map<string, number[]>();
+    transactions.forEach((tx) => {
+      const amount = Math.abs(Number(tx.amount));
+      const categoryId = tx.categoryId!;
+      if (!categoryData.has(categoryId)) {
+        categoryData.set(categoryId, []);
+      }
+      categoryData.get(categoryId)!.push(amount);
+    });
+
+    const categoryStats = new Map<string, { avg: number; std: number }>();
+    categoryData.forEach((amounts, categoryId) => {
+      const avg = amounts.reduce((sum, val) => sum + val, 0) / amounts.length;
+      const variance =
+        amounts.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) /
+        amounts.length;
+      const std = Math.sqrt(variance);
+      categoryStats.set(categoryId, { avg, std });
+    });
 
     const recentTransactions = await prisma.transaction.findMany({
       where: {
@@ -259,9 +298,10 @@ export async function detectTransactionAnomalies(
       }
     }
 
+    console.log("🚨 Found", anomalies.length, "anomalies");
     return anomalies;
   } catch (error) {
-    console.error("Error detecting anomalies:", error);
+    console.error("❌ Error detecting anomalies:", error);
     return [];
   } finally {
     await prisma.$disconnect();
@@ -272,7 +312,7 @@ export async function detectTransactionAnomalies(
  * Forecast next month's spending per category using a simple linear trend.
  */
 export async function forecastCategorySpending(
-  months: number = 6,
+  months: number = 6
 ): Promise<CategoryForecast[]> {
   const appUser = await getCurrentAppUser();
   if (!appUser) throw new Error("User not authenticated");
@@ -358,10 +398,13 @@ export async function forecastCategorySpending(
  * Answer a free-form financial question using OpenAI and recent data.
  */
 export async function answerFinanceQuestion(question: string) {
+  console.log("💬 answerFinanceQuestion - Question:", question);
+
   const appUser = await getCurrentAppUser();
   if (!appUser) throw new Error("User not authenticated");
 
   const familyId = appUser.familyMemberships[0]?.familyId;
+  console.log("👨‍👩‍👧‍👦 Family ID for question:", familyId);
   if (!familyId) throw new Error("No family found for user");
 
   const prisma = getPrismaClient();
@@ -383,16 +426,27 @@ export async function answerFinanceQuestion(question: string) {
       orderBy: { date: "asc" },
     });
 
+    console.log(
+      "📊 Found",
+      recentTransactions.length,
+      "recent transactions for context"
+    );
+
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
     const context = recentTransactions
       .map(
         (tx) =>
           `${tx.date.toISOString().slice(0, 10)} - ${tx.category?.name}: $${Math.abs(
-            Number(tx.amount),
-          )}`,
+            Number(tx.amount)
+          )}`
       )
       .slice(-100)
       .join("\n");
+
+    console.log(
+      "🤖 Sending question to OpenAI with context length:",
+      context.length
+    );
 
     const chat = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -407,7 +461,9 @@ export async function answerFinanceQuestion(question: string) {
       ],
     });
 
-    return chat.choices[0]?.message?.content?.trim() || "";
+    const answer = chat.choices[0]?.message?.content?.trim() || "";
+    console.log("💬 OpenAI answer length:", answer.length);
+    return answer;
   } catch (error) {
     console.error("Error answering question:", error);
     return "";
@@ -444,9 +500,8 @@ export async function generateBudgetTips(months: number = 3) {
 
 /**
  * Run an ad-hoc AI prompt and return the response.
- *
- * This replaces the previous API route example with a server action so
- * clients can invoke OpenAI directly without an HTTP endpoint.
+ * @param prompt - The prompt to run
+ * @returns The response from the AI
  */
 export async function runAiPrompt(prompt: string) {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
@@ -456,4 +511,3 @@ export async function runAiPrompt(prompt: string) {
   });
   return chat.choices[0]?.message?.content?.trim() || "";
 }
-
