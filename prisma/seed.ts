@@ -3,6 +3,7 @@ import {
   AccountType,
   TransactionType,
   TransactionStatus,
+  AssetType,
   GoalType,
   BudgetPeriod,
   FamilyRole,
@@ -486,7 +487,7 @@ async function main() {
         date: new Date(
           monthDate.getFullYear(),
           monthDate.getMonth(),
-          Math.floor(Math.random() * 28) + 1
+          Math.floor(Math.random() * 28) + 1,
         ),
         description: "Freelance Payment",
         merchant: "Client XYZ",
@@ -561,7 +562,7 @@ async function main() {
           date: new Date(
             monthDate.getFullYear(),
             monthDate.getMonth(),
-            Math.floor(Math.random() * 28) + 1
+            Math.floor(Math.random() * 28) + 1,
           ),
           description: `${expense.desc} ${i + 1}`,
           merchant: `${expense.desc} Store`,
@@ -587,7 +588,7 @@ async function main() {
         date: new Date(
           monthDate.getFullYear(),
           monthDate.getMonth(),
-          Math.floor(Math.random() * 28) + 1
+          Math.floor(Math.random() * 28) + 1,
         ),
         description: `Random ${randomExpense.desc}`,
         merchant: "Various",
@@ -616,8 +617,29 @@ async function main() {
   }
 
   console.log(
-    `✅ Created ${monthlyData.length} monthly transactions spanning 8 months`
+    `✅ Created ${monthlyData.length} monthly transactions spanning 8 months`,
   );
+
+  // Create sample investment assets
+  await prisma.investmentAsset.createMany({
+    data: [
+      {
+        name: "Apple Inc.",
+        ticker: "AAPL",
+        assetType: AssetType.STOCK,
+        quantity: 10,
+        familyId: family.id,
+      },
+      {
+        name: "Bitcoin",
+        ticker: "BTC",
+        assetType: AssetType.CRYPTO,
+        quantity: 0.5,
+        familyId: family.id,
+      },
+    ],
+  });
+  console.log("✅ Created sample investment assets");
 
   console.log("🎉 Database seeded successfully!");
 }
