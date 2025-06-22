@@ -11,8 +11,17 @@ type FinancialGoal = {
   isActive: boolean;
 };
 
+type AssetNewsItem = {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  publishedAt: string;
+};
+
 interface InsightsSectionProps {
   goals: FinancialGoal[];
+  assetNews: AssetNewsItem[];
 }
 
 function formatCurrency(amount: number) {
@@ -26,11 +35,24 @@ function calculateProgress(current: number, target: number) {
   return Math.min((current / target) * 100, 100);
 }
 
-export function InsightsSection({ goals }: InsightsSectionProps) {
+function formatTimeAgo(dateString: string) {
+  if (!dateString) return "recently";
+  try {
+    const date = new Date(dateString);
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch {
+    return "recently";
+  }
+}
+
+export function InsightsSection({ goals, assetNews }: InsightsSectionProps) {
   // Find the emergency fund goal for display
   const emergencyFundGoal = goals.find(
     (goal) => goal.type === "EMERGENCY_FUND" && goal.isActive
   );
+
+  // Get the latest asset news items (limit to 2 most recent)
+  const recentNews = assetNews.slice(0, 2);
 
   return (
     <div className="border rounded-lg">
@@ -42,27 +64,67 @@ export function InsightsSection({ goals }: InsightsSectionProps) {
       </div>
       <div className="p-6 space-y-4">
         <div className="space-y-3">
-          <div className="p-3 border rounded-lg">
-            <h4 className="font-medium text-sm mb-1">
-              Tech Stocks Rally: AAPL & MSFT Lead Gains
-            </h4>
-            <p className="text-xs text-muted-foreground mb-2">
-              Your portfolio gained 2.3% this week driven by tech sector growth
-            </p>
-            <div className="flex items-center gap-2 text-xs">
-              <Badge
-                variant="secondary"
-                className="bg-emerald-100 text-emerald-700"
-              >
-                📈 Market Update
-              </Badge>
-              <span className="text-muted-foreground">
-                {formatDistanceToNow(subHours(new Date(), 2), {
-                  addSuffix: true,
-                })}
-              </span>
+          {/* Display real asset news if available */}
+          {recentNews.map((newsItem) => {
+            const isFallback = newsItem.id.startsWith("fallback-");
+            return (
+              <div key={newsItem.id} className="p-3 border rounded-lg">
+                <h4 className="font-medium text-sm mb-1">
+                  {newsItem.url === "#" ? (
+                    <span>{newsItem.title}</span>
+                  ) : (
+                    <a
+                      href={newsItem.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {newsItem.title}
+                    </a>
+                  )}
+                </h4>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Related to your investment portfolio
+                  {isFallback && " • Sample news (API unavailable)"}
+                </p>
+                <div className="flex items-center gap-2 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className={
+                      isFallback
+                        ? "bg-gray-100 text-gray-700"
+                        : "bg-emerald-100 text-emerald-700"
+                    }
+                  >
+                    {isFallback ? "📰" : "📈"} {newsItem.source}
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    {formatTimeAgo(newsItem.publishedAt)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Fallback content if no news available */}
+          {recentNews.length === 0 && (
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium text-sm mb-1">
+                Market News Unavailable
+              </h4>
+              <p className="text-xs text-muted-foreground mb-2">
+                Add some investment assets to see personalized market updates
+              </p>
+              <div className="flex items-center gap-2 text-xs">
+                <Badge
+                  variant="secondary"
+                  className="bg-gray-100 text-gray-700"
+                >
+                  💡 Tip
+                </Badge>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="p-3 border rounded-lg">
             <h4 className="font-medium text-sm mb-1">

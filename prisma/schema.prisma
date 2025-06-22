@@ -241,6 +241,7 @@ model Family {
   Transaction      Transaction[]
   Budget           Budget[]
   Goal             Goal[]
+  InvestmentAsset  InvestmentAsset[]
 
   @@map("families")
 }
@@ -462,6 +463,28 @@ model Goal {
   @@index([familyId, isActive])
   @@index([familyId, type])
   @@map("goals")
+}
+
+enum AssetType {
+  STOCK
+  CRYPTO
+  OTHER
+}
+
+model InvestmentAsset {
+  id        String    @id @default(cuid())
+  name      String
+  ticker    String
+  assetType AssetType
+  quantity  Decimal   @default(0) @db.Decimal(12, 2)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@map("investment_assets")
 }
 
 // ---------- INDEXES AND CONSTRAINTS ----------
