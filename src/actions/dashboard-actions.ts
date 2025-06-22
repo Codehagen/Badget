@@ -59,6 +59,7 @@ import type {
   GoalType,
   BudgetPeriod,
 } from "@/generated/prisma";
+import { AssetType } from "@/generated/prisma";
 
 // Prisma client instantiation per request (best practice)
 function getPrismaClient() {
@@ -938,6 +939,30 @@ export async function seedUserData(resetFirst: boolean = false) {
           data: goal,
         });
       }
+
+      // Create sample investment assets
+      console.log("🔍 Creating investment assets for familyId:", family.id);
+
+      await tx.investmentAsset.createMany({
+        data: [
+          {
+            name: "Apple Inc.",
+            ticker: "AAPL",
+            assetType: AssetType.STOCK,
+            quantity: 10,
+            familyId: family.id,
+          },
+          {
+            name: "Bitcoin",
+            ticker: "BTC",
+            assetType: AssetType.CRYPTO,
+            quantity: 0.5,
+            familyId: family.id,
+          },
+        ],
+      });
+
+      console.log("✅ Created investment assets successfully");
 
       return { success: true, familyId: family.id };
     });

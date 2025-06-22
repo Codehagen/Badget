@@ -10,6 +10,7 @@ import {
   getFinancialGoals,
   getTransactions,
 } from "@/actions/dashboard-actions";
+import { getNewsForUserAssets } from "@/actions/asset-actions";
 import {
   HeaderSkeleton,
   MetricsSkeleton,
@@ -30,8 +31,11 @@ async function AsyncAnalyticsSection() {
 }
 
 async function AsyncInsightsSection() {
-  const goals = await getFinancialGoals();
-  return <InsightsSection goals={goals} />;
+  const [goals, assetNews] = await Promise.all([
+    getFinancialGoals(),
+    getNewsForUserAssets(),
+  ]);
+  return <InsightsSection goals={goals} assetNews={assetNews} />;
 }
 
 async function AsyncTransactionSection() {

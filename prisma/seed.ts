@@ -487,7 +487,7 @@ async function main() {
         date: new Date(
           monthDate.getFullYear(),
           monthDate.getMonth(),
-          Math.floor(Math.random() * 28) + 1,
+          Math.floor(Math.random() * 28) + 1
         ),
         description: "Freelance Payment",
         merchant: "Client XYZ",
@@ -562,7 +562,7 @@ async function main() {
           date: new Date(
             monthDate.getFullYear(),
             monthDate.getMonth(),
-            Math.floor(Math.random() * 28) + 1,
+            Math.floor(Math.random() * 28) + 1
           ),
           description: `${expense.desc} ${i + 1}`,
           merchant: `${expense.desc} Store`,
@@ -588,7 +588,7 @@ async function main() {
         date: new Date(
           monthDate.getFullYear(),
           monthDate.getMonth(),
-          Math.floor(Math.random() * 28) + 1,
+          Math.floor(Math.random() * 28) + 1
         ),
         description: `Random ${randomExpense.desc}`,
         merchant: "Various",
@@ -617,11 +617,13 @@ async function main() {
   }
 
   console.log(
-    `✅ Created ${monthlyData.length} monthly transactions spanning 8 months`,
+    `✅ Created ${monthlyData.length} monthly transactions spanning 8 months`
   );
 
   // Create sample investment assets
-  await prisma.investmentAsset.createMany({
+  console.log("🔍 About to create investment assets with familyId:", family.id);
+
+  const createdAssets = await prisma.investmentAsset.createMany({
     data: [
       {
         name: "Apple Inc.",
@@ -639,7 +641,27 @@ async function main() {
       },
     ],
   });
-  console.log("✅ Created sample investment assets");
+
+  console.log("✅ Created sample investment assets:", createdAssets.count);
+
+  // Verify the assets were created by querying them back
+  const verifyAssets = await prisma.investmentAsset.findMany({
+    where: { familyId: family.id },
+    select: {
+      id: true,
+      name: true,
+      ticker: true,
+      assetType: true,
+      quantity: true,
+      familyId: true,
+    },
+  });
+
+  console.log(
+    "🔍 Verification - Found assets in database:",
+    verifyAssets.length
+  );
+  console.log("📊 Asset details:", verifyAssets);
 
   console.log("🎉 Database seeded successfully!");
 }

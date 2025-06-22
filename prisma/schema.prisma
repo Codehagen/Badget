@@ -241,6 +241,7 @@ model Family {
   Transaction      Transaction[]
   Budget           Budget[]
   Goal             Goal[]
+  InvestmentAsset  InvestmentAsset[]
 
   @@map("families")
 }
