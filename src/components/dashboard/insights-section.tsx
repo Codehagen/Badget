@@ -46,13 +46,6 @@ function formatTimeAgo(dateString: string) {
 }
 
 export function InsightsSection({ goals, assetNews }: InsightsSectionProps) {
-  // Debug logging
-  console.log("🎨 InsightsSection received:", {
-    goalsCount: goals.length,
-    assetNewsCount: assetNews.length,
-    assetNews: assetNews,
-  });
-
   // Find the emergency fund goal for display
   const emergencyFundGoal = goals.find(
     (goal) => goal.type === "EMERGENCY_FUND" && goal.isActive
@@ -72,34 +65,46 @@ export function InsightsSection({ goals, assetNews }: InsightsSectionProps) {
       <div className="p-6 space-y-4">
         <div className="space-y-3">
           {/* Display real asset news if available */}
-          {recentNews.map((newsItem) => (
-            <div key={newsItem.id} className="p-3 border rounded-lg">
-              <h4 className="font-medium text-sm mb-1">
-                <a
-                  href={newsItem.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  {newsItem.title}
-                </a>
-              </h4>
-              <p className="text-xs text-muted-foreground mb-2">
-                Related to your investment portfolio
-              </p>
-              <div className="flex items-center gap-2 text-xs">
-                <Badge
-                  variant="secondary"
-                  className="bg-emerald-100 text-emerald-700"
-                >
-                  📈 {newsItem.source}
-                </Badge>
-                <span className="text-muted-foreground">
-                  {formatTimeAgo(newsItem.publishedAt)}
-                </span>
+          {recentNews.map((newsItem) => {
+            const isFallback = newsItem.id.startsWith("fallback-");
+            return (
+              <div key={newsItem.id} className="p-3 border rounded-lg">
+                <h4 className="font-medium text-sm mb-1">
+                  {newsItem.url === "#" ? (
+                    <span>{newsItem.title}</span>
+                  ) : (
+                    <a
+                      href={newsItem.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {newsItem.title}
+                    </a>
+                  )}
+                </h4>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Related to your investment portfolio
+                  {isFallback && " • Sample news (API unavailable)"}
+                </p>
+                <div className="flex items-center gap-2 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className={
+                      isFallback
+                        ? "bg-gray-100 text-gray-700"
+                        : "bg-emerald-100 text-emerald-700"
+                    }
+                  >
+                    {isFallback ? "📰" : "📈"} {newsItem.source}
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    {formatTimeAgo(newsItem.publishedAt)}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Fallback content if no news available */}
           {recentNews.length === 0 && (
