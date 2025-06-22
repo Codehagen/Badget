@@ -36,6 +36,8 @@ Welcome to Badget, the "Copilot for Money" - an AI-powered financial management 
 - **Family-First Design** - Multi-user households with role-based permissions
 - **Real-time Financial Health** - Instant alerts, goal tracking, and financial scoring
 - **Automated Budgeting** - Dynamic budget creation based on spending patterns
+  - *See [AI Budgeting Guide](docs/ai-budgeting-guide.md) (including [Using Vercel AI](docs/ai-budgeting-guide.md#using-vercel-ai)) for how to leverage these features*
+- **Advanced AI Tools** - Anomaly detection, spending forecasts and natural-language insights
 
 ## Architecture
 
