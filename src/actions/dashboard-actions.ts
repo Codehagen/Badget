@@ -106,6 +106,113 @@ async function getActiveFamilyId(): Promise<string | null> {
 }
 
 /**
+ * Get all transactions with enhanced filtering and pagination for transactions page
+ */
+export async function getAllTransactions(
+  options: GetTransactionsOptions & {
+    search?: string;
+  }
+) {
+  const familyId = await getActiveFamilyId();
+  if (!familyId) {
+    return {
+      transactions: [],
+      totalCount: 0,
+      totalPages: 0,
+    };
+  }
+
+  const {
+    limit = 50,
+    offset = 0,
+    status,
+    accountId,
+    categoryId,
+    startDate,
+    endDate,
+    search,
+  } = options;
+
+  const prisma = getPrismaClient();
+
+  try {
+    const whereClause = {
+      familyId,
+      ...(status && { status }),
+      ...(accountId && { accountId }),
+      ...(categoryId && { categoryId }),
+      ...(startDate &&
+        endDate && {
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        }),
+      ...(search && {
+        OR: [
+          {
+            description: {
+              contains: search,
+              mode: "insensitive" as const,
+            },
+          },
+          {
+            merchant: {
+              contains: search,
+              mode: "insensitive" as const,
+            },
+          },
+        ],
+      }),
+    };
+
+    const [transactions, totalCount] = await Promise.all([
+      prisma.transaction.findMany({
+        where: whereClause,
+        include: {
+          account: {
+            select: {
+              name: true,
+              type: true,
+            },
+          },
+          category: {
+            select: {
+              name: true,
+              icon: true,
+              color: true,
+            },
+          },
+        },
+        orderBy: {
+          date: "desc",
+        },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.transaction.count({
+        where: whereClause,
+      }),
+    ]);
+
+    return {
+      transactions,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+    };
+  } catch (error) {
+    console.error("Error fetching all transactions:", error);
+    return {
+      transactions: [],
+      totalCount: 0,
+      totalPages: 0,
+    };
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/**
  * Get recent transactions for the dashboard transaction table
  */
 export async function getTransactions(options: GetTransactionsOptions = {}) {
