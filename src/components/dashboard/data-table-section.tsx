@@ -1,52 +1,48 @@
-import { TransactionTable } from "@/components/transaction-table";
+import { EnhancedTransactionTable } from "./enhanced-transaction-table";
 
 // Define the transaction type that matches the dashboard actions return type
 type Transaction = {
   id: string;
   amount: number;
   description: string;
+  merchant: string;
   date: Date;
   type: "INCOME" | "EXPENSE" | "TRANSFER";
-  status: "PENDING" | "PROCESSED" | "RECONCILED" | "FAILED";
+  status:
+    | "RECONCILED"
+    | "NEEDS_CATEGORIZATION"
+    | "NEEDS_REVIEW"
+    | "IN_PROGRESS";
   account: {
     name: string;
     type: string;
   };
   category: {
+    id: string;
     name: string;
     icon?: string | null;
     color?: string | null;
   } | null;
 };
 
+interface Category {
+  id: string;
+  name: string;
+  icon?: string | null;
+  color?: string | null;
+}
+
 interface TransactionManagementSectionProps {
   transactions: Transaction[];
+  categories: Category[];
 }
 
 export function TransactionManagementSection({
   transactions,
+  categories,
 }: TransactionManagementSectionProps) {
-  // Transform the transaction data to match the TransactionTable expected format
-  const transformedTransactions = transactions.map((tx, index) => ({
-    id: index + 1, // TransactionTable expects numeric id
-    date: tx.date.toISOString(),
-    description: tx.description,
-    merchant: tx.account.name, // Using account name as merchant for now
-    amount: tx.amount, // Keep the amount as is since expenses are already negative in DB
-    type: tx.type.toLowerCase() as "income" | "expense" | "transfer",
-    category: tx.category?.name || "",
-    account: tx.account.name,
-    status: tx.status.toLowerCase().replace("_", " ") as
-      | "reconciled"
-      | "needs_categorization"
-      | "needs_review"
-      | "in_progress",
-    reconciled: tx.status === "RECONCILED",
-    categorized: tx.category !== null,
-  }));
-
   const pendingCount = transactions.filter(
-    (tx) => tx.status === "PENDING" || !tx.category
+    (tx) => tx.status !== "RECONCILED" || !tx.category
   ).length;
 
   return (
@@ -64,7 +60,10 @@ export function TransactionManagementSection({
           </span>
         </div>
       </div>
-      <TransactionTable data={transformedTransactions} />
+      <EnhancedTransactionTable
+        transactions={transactions}
+        categories={categories}
+      />
     </div>
   );
 }

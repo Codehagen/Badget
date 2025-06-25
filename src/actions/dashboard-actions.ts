@@ -178,6 +178,7 @@ export async function getAllTransactions(
           },
           category: {
             select: {
+              id: true,
               name: true,
               icon: true,
               color: true,
@@ -195,8 +196,14 @@ export async function getAllTransactions(
       }),
     ]);
 
+    // Transform Decimal amounts to numbers for client components
+    const transformedTransactions = transactions.map((transaction) => ({
+      ...transaction,
+      amount: Number(transaction.amount),
+    }));
+
     return {
-      transactions,
+      transactions: transformedTransactions,
       totalCount,
       totalPages: Math.ceil(totalCount / limit),
     };
@@ -270,7 +277,11 @@ export async function getTransactions(options: GetTransactionsOptions = {}) {
       skip: offset,
     });
 
-    return transactions;
+    // Transform Decimal amounts to numbers for client components
+    return transactions.map((transaction) => ({
+      ...transaction,
+      amount: Number(transaction.amount),
+    }));
   } catch (error) {
     console.error("Error fetching transactions:", error);
     return [];
@@ -1076,6 +1087,92 @@ export async function seedUserData(resetFirst: boolean = false) {
   } catch (error) {
     console.error("Error seeding user data:", error);
     throw new Error("Failed to seed user data");
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/**
+ * Update transaction category and automatically transition status to RECONCILED
+ */
+export async function updateTransactionCategory(
+  transactionId: string,
+  categoryId: string
+) {
+  const familyId = await getActiveFamilyId();
+  if (!familyId) {
+    throw new Error("User not authenticated or no family found");
+  }
+
+  const prisma = getPrismaClient();
+
+  try {
+    // Verify the transaction belongs to the user's family
+    const transaction = await prisma.transaction.findFirst({
+      where: {
+        id: transactionId,
+        familyId: familyId,
+      },
+    });
+
+    if (!transaction) {
+      throw new Error("Transaction not found or access denied");
+    }
+
+    // Verify the category belongs to the user's family
+    const category = await prisma.category.findFirst({
+      where: {
+        id: categoryId,
+        familyId: familyId,
+        isActive: true,
+      },
+    });
+
+    if (!category) {
+      throw new Error("Category not found or access denied");
+    }
+
+    // Update the transaction with the new category and status
+    const updatedTransaction = await prisma.transaction.update({
+      where: {
+        id: transactionId,
+      },
+      data: {
+        categoryId: categoryId,
+        status: "RECONCILED",
+        isReconciled: true,
+        updatedAt: new Date(),
+      },
+      include: {
+        account: {
+          select: {
+            name: true,
+            type: true,
+          },
+        },
+        category: {
+          select: {
+            name: true,
+            icon: true,
+            color: true,
+          },
+        },
+      },
+    });
+
+    // Transform Decimal amount to number for client components
+    const serializedTransaction = {
+      ...updatedTransaction,
+      amount: Number(updatedTransaction.amount),
+    };
+
+    return {
+      success: true,
+      transaction: serializedTransaction,
+    };
+  } catch (error) {
+    console.error("Error updating transaction category:", error);
+    throw error;
   } finally {
     await prisma.$disconnect();
   }

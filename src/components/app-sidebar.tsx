@@ -41,7 +41,7 @@ const data = {
     },
     {
       title: "Transactions",
-      url: "/transactions",
+      url: "/dashboard/transactions",
       icon: IconCreditCard,
     },
     {
