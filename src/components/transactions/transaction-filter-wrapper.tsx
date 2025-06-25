@@ -3,25 +3,18 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useTransition, useState, useEffect, useRef } from "react";
 import { TransactionFilterBar } from "./transaction-filter-bar";
-
-interface Account {
-  id: string;
-  name: string;
-  type: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  icon?: string;
-  color?: string;
-}
+import {
+  TransactionFilters,
+  FilterValue,
+  Account,
+  Category,
+} from "@/types/filters";
 
 interface TransactionFilterWrapperProps {
   accounts: Account[];
   categories: Category[];
   totalCount: number;
-  currentFilters: Record<string, any>;
+  currentFilters: TransactionFilters;
 }
 
 export function TransactionFilterWrapper({
@@ -36,7 +29,7 @@ export function TransactionFilterWrapper({
 
   // Local state for immediate UI feedback
   const [localSearch, setLocalSearch] = useState(currentFilters.search || "");
-  const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>();
+  const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Handle search with debouncing
   const updateSearchFilter = useCallback(
@@ -70,10 +63,10 @@ export function TransactionFilterWrapper({
   );
 
   const updateFilter = useCallback(
-    (key: string, value: any) => {
+    (key: string, value: FilterValue) => {
       // Handle search separately with debouncing
       if (key === "search") {
-        updateSearchFilter(value || "");
+        updateSearchFilter((value as string) || "");
         return;
       }
 
@@ -94,7 +87,7 @@ export function TransactionFilterWrapper({
       const paramKey = getParamKey(key);
 
       if (value && value !== "all" && value !== "") {
-        params.set(paramKey, value);
+        params.set(paramKey, value.toString());
       } else {
         params.delete(paramKey);
       }
@@ -110,7 +103,7 @@ export function TransactionFilterWrapper({
   );
 
   const updateFilters = useCallback(
-    (updates: Record<string, any>) => {
+    (updates: Partial<TransactionFilters>) => {
       const params = new URLSearchParams(searchParams.toString());
 
       // Map internal key names to URL parameter names
@@ -129,7 +122,7 @@ export function TransactionFilterWrapper({
         const paramKey = getParamKey(key);
 
         if (value && value !== "all" && value !== "") {
-          params.set(paramKey, value);
+          params.set(paramKey, value.toString());
         } else {
           params.delete(paramKey);
         }

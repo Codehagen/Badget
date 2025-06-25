@@ -44,8 +44,8 @@ export interface Account extends FilterOption {
 }
 
 export interface Category extends FilterOption {
-  icon: string;
-  color: string;
+  icon?: string;
+  color?: string;
 }
 
 export interface QuickFilter {

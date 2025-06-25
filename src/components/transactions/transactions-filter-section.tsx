@@ -1,37 +1,11 @@
 import { TransactionFilterWrapper } from "./transaction-filter-wrapper";
-
-interface Account {
-  id: string;
-  name: string;
-  type: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  icon?: string;
-  color?: string;
-}
-
-interface FilterValues {
-  search?: string;
-  accountId?: string;
-  categoryId?: string;
-  status?:
-    | "RECONCILED"
-    | "NEEDS_CATEGORIZATION"
-    | "NEEDS_REVIEW"
-    | "IN_PROGRESS";
-  type?: "INCOME" | "EXPENSE" | "TRANSFER";
-  startDate?: Date;
-  endDate?: Date;
-}
+import { Account, Category, TransactionFilters } from "@/types/filters";
 
 interface TransactionsFilterSectionProps {
   accounts: Account[];
   categories: Category[];
   totalCount: number;
-  currentFilters: FilterValues;
+  currentFilters: TransactionFilters;
 }
 
 export function TransactionsFilterSection({

@@ -87,7 +87,7 @@ import {
   SuspendedTransactionsStatsSection,
   SuspendedTransactionsFilterSection,
   SuspendedTransactionsTableSection,
-} from "@/components/dashboard/transactions-async-components";
+} from "@/components/transactions/transactions-async-components";
 
 interface TransactionsPageProps {
   searchParams: {

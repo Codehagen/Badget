@@ -12,7 +12,7 @@ import {
   HeaderSkeleton,
   MetricsSkeleton,
   TransactionTableSkeleton,
-} from "./skeletons";
+} from "../dashboard/skeletons";
 
 interface FilterValues {
   search?: string;

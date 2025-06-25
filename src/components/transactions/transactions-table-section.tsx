@@ -1,4 +1,4 @@
-import { TransactionManagementSection } from "./data-table-section";
+import { TransactionManagementSection } from "../dashboard/data-table-section";
 import { TransactionsPagination } from "./transactions-pagination";
 
 type Transaction = {

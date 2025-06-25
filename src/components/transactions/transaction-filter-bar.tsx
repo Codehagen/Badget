@@ -32,30 +32,23 @@ import {
 } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
-import { FilterChips, createFilterChips } from "./filter-chips";
-import { QuickFilters } from "./quick-filters";
-
-interface Account {
-  id: string;
-  name: string;
-  type: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  icon?: string;
-  color?: string;
-}
+import { FilterChips, createFilterChips } from "../dashboard/filter-chips";
+import { QuickFilters } from "../dashboard/quick-filters";
+import {
+  TransactionFilters,
+  FilterValue,
+  Account,
+  Category,
+} from "@/types/filters";
 
 interface TransactionFilterBarProps {
-  filters: Record<string, any>;
+  filters: TransactionFilters;
   accounts: Account[];
   categories: Category[];
   isLoading: boolean;
   totalCount: number;
-  onUpdateFilter: (key: string, value: any) => void;
-  onUpdateFilters: (updates: Record<string, any>) => void;
+  onUpdateFilter: (key: string, value: FilterValue) => void;
+  onUpdateFilters: (updates: Partial<TransactionFilters>) => void;
   onClearFilters: () => void;
 }
 
@@ -83,8 +76,8 @@ export function TransactionFilterBar({
   const handleDateRangeChange = useCallback(
     (range: DateRange | undefined) => {
       onUpdateFilters({
-        startDate: range?.from?.toISOString(),
-        endDate: range?.to?.toISOString(),
+        startDate: range?.from,
+        endDate: range?.to,
       });
     },
     [onUpdateFilters]
