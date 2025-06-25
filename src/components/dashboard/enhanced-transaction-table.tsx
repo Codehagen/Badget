@@ -114,6 +114,7 @@ function CategoryCell({
   onUpdate: (transactionId: string, category: Category) => void;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleCategorySelect = (categoryId: string) => {
     startTransition(async () => {
@@ -131,22 +132,36 @@ function CategoryCell({
             color: result.transaction.category.color,
           };
           onUpdate(transaction.id, updatedCategory);
-          toast.success("Transaction categorized successfully");
+          setIsEditing(false); // Close the editor
+          toast.success("Category updated successfully");
         } else {
-          toast.error("Failed to update transaction");
+          toast.error("Failed to update category");
         }
       } catch {
-        toast.error("Failed to update transaction");
+        toast.error("Failed to update category");
       }
     });
   };
 
-  // Show category selector if no category exists
-  if (!transaction.category) {
-    const placeholder = isPending ? "Updating..." : "Select category...";
+  // Show category selector if no category exists OR if editing existing category
+  if (!transaction.category || isEditing) {
+    const placeholder = isPending
+      ? "Updating..."
+      : !transaction.category
+        ? "Select category..."
+        : "Change category...";
 
     return (
-      <Select onValueChange={handleCategorySelect} disabled={isPending}>
+      <Select
+        onValueChange={handleCategorySelect}
+        disabled={isPending}
+        value={transaction.category?.id || ""}
+        onOpenChange={(open) => {
+          if (!open && transaction.category) {
+            setIsEditing(false); // Close editing when dropdown closes
+          }
+        }}
+      >
         <SelectTrigger className="w-[180px] h-6 text-xs">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
@@ -164,9 +179,14 @@ function CategoryCell({
     );
   }
 
-  // Show category badge if category exists
+  // Show clickable category badge if category exists
   return (
-    <Badge variant="outline" className="flex items-center gap-1">
+    <Badge
+      variant="outline"
+      className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 transition-colors"
+      onClick={() => setIsEditing(true)}
+      title="Click to change category"
+    >
       {transaction.category.icon && <span>{transaction.category.icon}</span>}
       {transaction.category.name}
     </Badge>

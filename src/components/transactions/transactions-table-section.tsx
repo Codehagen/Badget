@@ -1,5 +1,6 @@
 import { TransactionManagementSection } from "../dashboard/data-table-section";
 import { TransactionsPagination } from "./transactions-pagination";
+import { TransactionEmptyState } from "./transaction-empty-state";
 
 type Transaction = {
   id: string;
@@ -39,6 +40,9 @@ interface TransactionsTableSectionProps {
   totalPages: number;
   totalCount: number;
   pageSize: number;
+  hasActiveFilters?: boolean;
+  filterType?: "uncategorized" | "search" | "status" | "general";
+  searchQuery?: string;
 }
 
 export function TransactionsTableSection({
@@ -48,7 +52,21 @@ export function TransactionsTableSection({
   totalPages,
   totalCount,
   pageSize,
+  hasActiveFilters = false,
+  filterType = "general",
+  searchQuery,
 }: TransactionsTableSectionProps) {
+  // Show empty state if no transactions
+  if (transactions.length === 0) {
+    return (
+      <TransactionEmptyState
+        hasActiveFilters={hasActiveFilters}
+        filterType={filterType}
+        searchQuery={searchQuery}
+      />
+    );
+  }
+
   return (
     <div className="border rounded-lg">
       <div className="p-6">

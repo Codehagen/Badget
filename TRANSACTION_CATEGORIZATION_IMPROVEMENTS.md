@@ -23,6 +23,7 @@ Implementation of enhanced transaction categorization system with improved uncat
 - [x] ✅ Update quick filters to use new uncategorized filter logic
 - [x] ✅ Fix uncategorized filter badge/pill display in FilterChips component
 - [x] ✅ Separate status and category logic: move category selector to category column, status badges to status column
+- [x] ✅ Make category badges clickable to allow editing existing categories
 
 ## Future Tasks
 

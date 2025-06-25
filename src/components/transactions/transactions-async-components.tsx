@@ -26,6 +26,7 @@ interface FilterValues {
   type?: "INCOME" | "EXPENSE" | "TRANSFER";
   startDate?: Date;
   endDate?: Date;
+  uncategorized?: boolean;
 }
 
 interface AsyncComponentProps {
@@ -146,6 +147,22 @@ async function AsyncTransactionsTableSection({
     color: category.color || undefined,
   }));
 
+  // Determine if there are active filters
+  const hasActiveFilters = Object.values(filters).some(
+    (value) => value !== undefined && value !== null && value !== false
+  );
+
+  // Determine filter type for appropriate empty state messaging
+  // Priority: uncategorized > search > status > general
+  let filterType: "uncategorized" | "search" | "status" | "general" = "general";
+  if (filters.uncategorized) {
+    filterType = "uncategorized";
+  } else if (filters.search) {
+    filterType = "search";
+  } else if (filters.status) {
+    filterType = "status";
+  }
+
   return (
     <TransactionsTableSection
       transactions={transformedTransactions}
@@ -154,6 +171,9 @@ async function AsyncTransactionsTableSection({
       totalPages={transactionData.totalPages}
       totalCount={transactionData.totalCount}
       pageSize={limit}
+      hasActiveFilters={hasActiveFilters}
+      filterType={filterType}
+      searchQuery={filters.search}
     />
   );
 }
