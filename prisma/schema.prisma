@@ -466,24 +466,46 @@ model Goal {
 }
 
 enum AssetType {
+  REAL_ESTATE
   STOCK
   CRYPTO
+  BOND
+  VEHICLE
   OTHER
 }
 
 model InvestmentAsset {
   id        String    @id @default(cuid())
   name      String
-  ticker    String
+  ticker    String? // Optional for non-stock assets
   assetType AssetType
   quantity  Decimal   @default(0) @db.Decimal(12, 2)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  // Asset-specific JSON data for flexible storage
+  metadata Json @default("{}")
+
+  // Price tracking
+  purchasePrice   Decimal?  @db.Decimal(12, 2)
+  currentPrice    Decimal?  @db.Decimal(12, 2)
+  lastPriceUpdate DateTime?
+
+  // Location data (for real estate/vehicles)
+  address String?
+  city    String?
+  state   String?
+  zipCode String?
+
+  // Additional identifiers
+  symbol String? // Stock symbol or crypto ID
+  vin    String? // Vehicle identification number
+
   familyId String
   family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   @@index([familyId])
+  @@index([familyId, assetType])
   @@map("investment_assets")
 }
 

@@ -31,6 +31,18 @@ export async function getInvestmentAssets() {
         ticker: true,
         assetType: true,
         quantity: true,
+        purchasePrice: true,
+        currentPrice: true,
+        lastPriceUpdate: true,
+        address: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        symbol: true,
+        vin: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true,
       },
       orderBy: { name: "asc" },
     });
@@ -38,6 +50,8 @@ export async function getInvestmentAssets() {
     return assets.map((asset) => ({
       ...asset,
       quantity: Number(asset.quantity),
+      purchasePrice: asset.purchasePrice ? Number(asset.purchasePrice) : null,
+      currentPrice: asset.currentPrice ? Number(asset.currentPrice) : null,
     }));
   } catch (error) {
     console.error("Error fetching investment assets:", error);
@@ -52,39 +66,74 @@ export async function createInvestmentAsset({
   ticker,
   assetType,
   quantity,
+  purchasePrice,
+  currentPrice,
+  address,
+  city,
+  state,
+  zipCode,
+  symbol,
+  vin,
+  metadata,
 }: {
-  name: string
-  ticker: string
-  assetType: "STOCK" | "CRYPTO" | "OTHER"
-  quantity: number
+  name: string;
+  ticker?: string;
+  assetType: "REAL_ESTATE" | "STOCK" | "CRYPTO" | "BOND" | "VEHICLE" | "OTHER";
+  quantity: number;
+  purchasePrice?: number;
+  currentPrice?: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  symbol?: string;
+  vin?: string;
+  metadata?: string;
 }) {
-  const familyId = await getActiveFamilyId()
+  const familyId = await getActiveFamilyId();
   if (!familyId) {
-    throw new Error("User not authenticated")
+    throw new Error("User not authenticated");
   }
 
-  const prisma = getPrismaClient()
+  const prisma = getPrismaClient();
 
   try {
     const asset = await prisma.investmentAsset.create({
       data: {
         name: name.trim(),
-        ticker: ticker.trim().toUpperCase(),
+        ticker: ticker?.trim().toUpperCase() || null,
         assetType,
         quantity,
+        purchasePrice: purchasePrice || null,
+        currentPrice: currentPrice || null,
+        address: address?.trim() || null,
+        city: city?.trim() || null,
+        state: state?.trim() || null,
+        zipCode: zipCode?.trim() || null,
+        symbol: symbol?.trim() || null,
+        vin: vin?.trim() || null,
+        metadata: metadata || "{}",
         familyId,
       },
-    })
+    });
 
-    return { success: true, asset }
+    // Convert Decimal fields to numbers for client-side compatibility
+    const serializedAsset = {
+      ...asset,
+      quantity: Number(asset.quantity),
+      purchasePrice: asset.purchasePrice ? Number(asset.purchasePrice) : null,
+      currentPrice: asset.currentPrice ? Number(asset.currentPrice) : null,
+    };
+
+    return { success: true, asset: serializedAsset };
   } catch (error) {
-    console.error("Error creating investment asset:", error)
+    console.error("Error creating investment asset:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to create asset",
-    }
+    };
   } finally {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
   }
 }
 
@@ -225,6 +274,8 @@ function getFallbackNews(tickers: string[]): AssetNewsItem[] {
 
 export async function getNewsForUserAssets() {
   const assets = await getInvestmentAssets();
-  const tickers = assets.map((a) => a.ticker).filter(Boolean);
+  const tickers = assets
+    .map((a) => a.ticker)
+    .filter((ticker): ticker is string => Boolean(ticker));
   return await getAssetNews(tickers);
 }
