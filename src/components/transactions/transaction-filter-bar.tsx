@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
+import { Spinner } from "@/components/ui/spinner";
 import {
   IconSearch,
   IconFilter,
@@ -299,9 +300,14 @@ export function TransactionFilterBar({
       {/* Results Summary */}
       <div className="flex items-center justify-between text-sm text-muted-foreground border-t pt-3">
         <span>
-          {isLoading
-            ? "Filtering..."
-            : `${totalCount.toLocaleString()} transaction${totalCount !== 1 ? "s" : ""} found`}
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              <Spinner size={16} />
+              Filtering...
+            </span>
+          ) : (
+            `${totalCount.toLocaleString()} transaction${totalCount !== 1 ? "s" : ""} found`
+          )}
         </span>
         {activeFiltersCount > 0 && (
           <span className="text-xs">

@@ -27,6 +27,7 @@ import {
 } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
+import { Spinner } from "@/components/ui/spinner";
 
 type Account = {
   id: string;
@@ -367,9 +368,14 @@ export function TransactionsFilter({
       {/* Results Summary */}
       <div className="mt-4 pt-4 border-t">
         <p className="text-sm text-muted-foreground">
-          {isPending
-            ? "Filtering..."
-            : `${totalCount.toLocaleString()} transaction${totalCount !== 1 ? "s" : ""} found`}
+          {isPending ? (
+            <span className="flex items-center gap-2">
+              <Spinner size={16} />
+              Filtering...
+            </span>
+          ) : (
+            `${totalCount.toLocaleString()} transaction${totalCount !== 1 ? "s" : ""} found`
+          )}
         </p>
       </div>
     </div>

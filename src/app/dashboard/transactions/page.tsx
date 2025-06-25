@@ -135,7 +135,7 @@ export default async function TransactionsPage({
   return (
     <div className="flex flex-col gap-6 p-6">
       <SuspendedTransactionsHeaderSection />
-      <SuspendedTransactionsStatsSection filters={filters} />
+      {/* <SuspendedTransactionsStatsSection filters={filters} /> */}
       <SuspendedTransactionsFilterSection filters={filters} />
       <SuspendedTransactionsTableSection
         key={`table-${searchKey}`}
