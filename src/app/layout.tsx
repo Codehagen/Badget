@@ -1,4 +1,5 @@
 import { ThemeProvider } from "@/components/theme-provider";
+import { CommandMenu } from "@/components/command-menu";
 import { constructMetadata } from "@/lib/construct-metadata";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -45,6 +46,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <CommandMenu />
         </ThemeProvider>
       </body>
     </html>

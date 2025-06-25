@@ -47,6 +47,47 @@ export async function getInvestmentAssets() {
   }
 }
 
+export async function createInvestmentAsset({
+  name,
+  ticker,
+  assetType,
+  quantity,
+}: {
+  name: string
+  ticker: string
+  assetType: "STOCK" | "CRYPTO" | "OTHER"
+  quantity: number
+}) {
+  const familyId = await getActiveFamilyId()
+  if (!familyId) {
+    throw new Error("User not authenticated")
+  }
+
+  const prisma = getPrismaClient()
+
+  try {
+    const asset = await prisma.investmentAsset.create({
+      data: {
+        name: name.trim(),
+        ticker: ticker.trim().toUpperCase(),
+        assetType,
+        quantity,
+        familyId,
+      },
+    })
+
+    return { success: true, asset }
+  } catch (error) {
+    console.error("Error creating investment asset:", error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create asset",
+    }
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
 export interface AssetNewsItem {
   id: string;
   title: string;
