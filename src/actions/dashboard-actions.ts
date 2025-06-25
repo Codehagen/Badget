@@ -111,6 +111,7 @@ async function getActiveFamilyId(): Promise<string | null> {
 export async function getAllTransactions(
   options: GetTransactionsOptions & {
     search?: string;
+    uncategorized?: boolean;
   }
 ) {
   const familyId = await getActiveFamilyId();
@@ -131,12 +132,23 @@ export async function getAllTransactions(
     startDate,
     endDate,
     search,
+    uncategorized,
   } = options;
 
   const prisma = getPrismaClient();
 
   try {
-    const whereClause = {
+    // Build where clause with proper OR logic handling
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const whereClause: {
+      familyId: string;
+      status?: TransactionStatus;
+      accountId?: string;
+      categoryId?: string;
+      date?: { gte: Date; lte: Date };
+      OR?: any[];
+      AND?: any[];
+    } = {
       familyId,
       ...(status && { status }),
       ...(accountId && { accountId }),
@@ -148,23 +160,47 @@ export async function getAllTransactions(
             lte: endDate,
           },
         }),
-      ...(search && {
-        OR: [
-          {
-            description: {
-              contains: search,
-              mode: "insensitive" as const,
-            },
-          },
-          {
-            merchant: {
-              contains: search,
-              mode: "insensitive" as const,
-            },
-          },
-        ],
-      }),
     };
+
+    // Handle uncategorized filter
+    if (uncategorized) {
+      whereClause.OR = [{ categoryId: null }, { categoryId: "" }];
+    }
+
+    // Handle search filter - if we already have OR from uncategorized, we need to combine them
+    if (search) {
+      const searchConditions = [
+        {
+          description: {
+            contains: search,
+            mode: "insensitive" as const,
+          },
+        },
+        {
+          merchant: {
+            contains: search,
+            mode: "insensitive" as const,
+          },
+        },
+      ];
+
+      if (whereClause.OR) {
+        // If uncategorized filter is active, combine both conditions using AND
+        whereClause.AND = [
+          {
+            OR: whereClause.OR, // uncategorized conditions
+          },
+          {
+            OR: searchConditions, // search conditions
+          },
+        ];
+        delete whereClause.OR;
+      } else {
+        // If no uncategorized filter, just add search OR conditions
+        whereClause.OR = searchConditions;
+      }
+    }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const [transactions, totalCount] = await Promise.all([
       prisma.transaction.findMany({

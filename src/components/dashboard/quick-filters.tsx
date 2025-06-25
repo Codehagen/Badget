@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -59,7 +60,7 @@ export function QuickFilters({
       description: "Missing categories",
       icon: IconClockQuestion,
       filters: {
-        status: "NEEDS_CATEGORIZATION",
+        uncategorized: true,
       },
       variant: "outline",
     },

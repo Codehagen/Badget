@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { IconX } from "@tabler/icons-react";
@@ -123,6 +124,16 @@ export function createFilterChips(
       label: "Type",
       value: filters.type.toLowerCase(),
       onRemove: () => onRemoveFilter("type"),
+    });
+  }
+
+  // Uncategorized filter
+  if (filters.uncategorized) {
+    chips.push({
+      key: "uncategorized",
+      label: "Filter",
+      value: "Uncategorized",
+      onRemove: () => onRemoveFilter("uncategorized"),
     });
   }
 

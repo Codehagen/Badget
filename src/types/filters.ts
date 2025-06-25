@@ -20,6 +20,7 @@ export interface TransactionFilters {
   startDate?: Date;
   endDate?: Date;
   dateRange?: DateRange;
+  uncategorized?: boolean;
 }
 
 export interface SerializedFilters {
@@ -30,6 +31,7 @@ export interface SerializedFilters {
   type?: string;
   startDate?: string;
   endDate?: string;
+  uncategorized?: string;
 }
 
 export interface FilterOption {

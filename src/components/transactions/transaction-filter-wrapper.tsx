@@ -121,7 +121,14 @@ export function TransactionFilterWrapper({
       Object.entries(updates).forEach(([key, value]) => {
         const paramKey = getParamKey(key);
 
-        if (value && value !== "all" && value !== "") {
+        if (key === "uncategorized") {
+          // Handle boolean uncategorized filter
+          if (value === true) {
+            params.set(paramKey, "true");
+          } else {
+            params.delete(paramKey);
+          }
+        } else if (value && value !== "all" && value !== "") {
           params.set(paramKey, value.toString());
         } else {
           params.delete(paramKey);

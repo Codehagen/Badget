@@ -67,13 +67,20 @@ export function InteractiveTransactionBadge({
     });
   };
 
-  // If transaction needs categorization or review, show select directly
-  if (status === "NEEDS_CATEGORIZATION" || status === "NEEDS_REVIEW") {
+  // If transaction needs categorization, review, or is reconciled but missing category, show select
+  const needsCategorySelection =
+    status === "NEEDS_CATEGORIZATION" ||
+    status === "NEEDS_REVIEW" ||
+    (status === "RECONCILED" && !category);
+
+  if (needsCategorySelection) {
     const placeholder = isPending
       ? "Updating..."
       : status === "NEEDS_CATEGORIZATION"
         ? "Select category..."
-        : "Review & select category...";
+        : status === "NEEDS_REVIEW"
+          ? "Review & select category..."
+          : "Missing category - select one...";
 
     return (
       <Select onValueChange={handleCategorySelect} disabled={isPending}>

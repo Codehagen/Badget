@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -17,8 +24,13 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconArrowsExchange,
+  IconCircleCheckFilled,
+  IconLoader,
+  IconAlertTriangle,
+  IconClockQuestion,
 } from "@tabler/icons-react";
-import { InteractiveTransactionBadge } from "./interactive-transaction-badge";
+import { updateTransactionCategory } from "@/actions/dashboard-actions";
+import { toast } from "sonner";
 
 interface Category {
   id: string;
@@ -49,6 +61,116 @@ interface Transaction {
 interface EnhancedTransactionTableProps {
   transactions: Transaction[];
   categories: Category[];
+}
+
+// Status Badge Component - only shows status
+function StatusBadge({ status }: { status: Transaction["status"] }) {
+  switch (status) {
+    case "RECONCILED":
+      return (
+        <Badge variant="outline" className="text-muted-foreground px-1.5">
+          <IconCircleCheckFilled className="h-3 w-3 fill-green-500 dark:fill-green-400 mr-1" />
+          Reconciled
+        </Badge>
+      );
+    case "NEEDS_CATEGORIZATION":
+      return (
+        <Badge variant="outline" className="text-muted-foreground px-1.5">
+          <IconClockQuestion className="h-3 w-3 text-orange-500 mr-1" />
+          Needs Category
+        </Badge>
+      );
+    case "NEEDS_REVIEW":
+      return (
+        <Badge variant="outline" className="text-muted-foreground px-1.5">
+          <IconAlertTriangle className="h-3 w-3 text-red-500 mr-1" />
+          Needs Review
+        </Badge>
+      );
+    case "IN_PROGRESS":
+      return (
+        <Badge variant="outline" className="text-muted-foreground px-1.5">
+          <IconLoader className="h-3 w-3 mr-1" />
+          In Progress
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="outline" className="text-muted-foreground px-1.5">
+          {status}
+        </Badge>
+      );
+  }
+}
+
+// Category Cell Component - shows category or category selector
+function CategoryCell({
+  transaction,
+  categories,
+  onUpdate,
+}: {
+  transaction: Transaction;
+  categories: Category[];
+  onUpdate: (transactionId: string, category: Category) => void;
+}) {
+  const [isPending, startTransition] = useTransition();
+
+  const handleCategorySelect = (categoryId: string) => {
+    startTransition(async () => {
+      try {
+        const result = await updateTransactionCategory(
+          transaction.id,
+          categoryId
+        );
+
+        if (result.success && result.transaction.category) {
+          const updatedCategory = {
+            id: categoryId,
+            name: result.transaction.category.name,
+            icon: result.transaction.category.icon,
+            color: result.transaction.category.color,
+          };
+          onUpdate(transaction.id, updatedCategory);
+          toast.success("Transaction categorized successfully");
+        } else {
+          toast.error("Failed to update transaction");
+        }
+      } catch {
+        toast.error("Failed to update transaction");
+      }
+    });
+  };
+
+  // Show category selector if no category exists
+  if (!transaction.category) {
+    const placeholder = isPending ? "Updating..." : "Select category...";
+
+    return (
+      <Select onValueChange={handleCategorySelect} disabled={isPending}>
+        <SelectTrigger className="w-[180px] h-6 text-xs">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {categories.map((cat) => (
+            <SelectItem key={cat.id} value={cat.id}>
+              <div className="flex items-center gap-2">
+                {cat.icon && <span>{cat.icon}</span>}
+                <span>{cat.name}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  // Show category badge if category exists
+  return (
+    <Badge variant="outline" className="flex items-center gap-1">
+      {transaction.category.icon && <span>{transaction.category.icon}</span>}
+      {transaction.category.name}
+    </Badge>
+  );
 }
 
 export function EnhancedTransactionTable({
@@ -137,18 +259,11 @@ export function EnhancedTransactionTable({
                 </div>
               </TableCell>
               <TableCell>
-                {transaction.category ? (
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    {transaction.category.icon && (
-                      <span>{transaction.category.icon}</span>
-                    )}
-                    {transaction.category.name}
-                  </Badge>
-                ) : (
-                  <span className="text-muted-foreground text-sm">
-                    Uncategorized
-                  </span>
-                )}
+                <CategoryCell
+                  transaction={transaction}
+                  categories={categories}
+                  onUpdate={handleTransactionUpdate}
+                />
               </TableCell>
               <TableCell className="text-sm">
                 {transaction.account.name}
@@ -157,13 +272,7 @@ export function EnhancedTransactionTable({
                 {formatAmount(transaction.amount)}
               </TableCell>
               <TableCell>
-                <InteractiveTransactionBadge
-                  transactionId={transaction.id}
-                  status={transaction.status}
-                  category={transaction.category}
-                  categories={categories}
-                  onUpdate={handleTransactionUpdate}
-                />
+                <StatusBadge status={transaction.status} />
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">

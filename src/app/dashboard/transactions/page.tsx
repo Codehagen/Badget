@@ -100,6 +100,7 @@ interface TransactionsPageProps {
     type?: string;
     startDate?: string;
     endDate?: string;
+    uncategorized?: string;
   };
 }
 
@@ -125,6 +126,7 @@ export default async function TransactionsPage({
     type: params.type as "INCOME" | "EXPENSE" | "TRANSFER" | undefined,
     startDate: params.startDate ? new Date(params.startDate) : undefined,
     endDate: params.endDate ? new Date(params.endDate) : undefined,
+    uncategorized: params.uncategorized === "true",
   };
 
   // Create a key that changes when search params change to trigger re-renders
