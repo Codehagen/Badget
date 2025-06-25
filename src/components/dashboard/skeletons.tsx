@@ -70,29 +70,71 @@ export function InsightsSkeleton() {
 
 export function TransactionTableSkeleton() {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <Skeleton className="h-6 w-40 mb-2" />
-          <Skeleton className="h-4 w-80" />
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-16" />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="border rounded-lg p-6">
+            <Skeleton className="h-20 w-full" />
+          </div>
+        ))}
+      </div>
+
+      <div className="border rounded-lg p-6">
+        <Skeleton className="h-96 w-full" />
+      </div>
+    </div>
+  );
+}
+
+export function TransactionsOnlySkeleton() {
+  return (
+    <div className="border rounded-lg">
+      <div className="p-6">
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+            <Skeleton className="h-6 w-24" />
+          </div>
+
+          {/* Table Header */}
+          <div className="border rounded-lg">
+            <div className="border-b p-4">
+              <div className="grid grid-cols-5 gap-4">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </div>
+
+            {/* Table Rows */}
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="border-b p-4 last:border-b-0">
+                <div className="grid grid-cols-5 gap-4 items-center">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-4 w-12" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="border rounded-lg">
-        <div className="p-4">
-          <div className="space-y-3">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <div key={index} className="flex items-center space-x-4">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="space-y-2 flex-1">
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-3 w-32" />
-                </div>
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-6 w-16" />
-              </div>
+
+      {/* Pagination */}
+      <div className="border-t p-4">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-32" />
+          <div className="flex gap-2">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-8 w-8" />
             ))}
           </div>
         </div>

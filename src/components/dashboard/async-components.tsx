@@ -9,6 +9,7 @@ import {
   getSpendingTrends,
   getFinancialGoals,
   getTransactions,
+  getCategories,
 } from "@/actions/dashboard-actions";
 import { getNewsForUserAssets } from "@/actions/asset-actions";
 import {
@@ -39,8 +40,16 @@ async function AsyncInsightsSection() {
 }
 
 async function AsyncTransactionSection() {
-  const transactions = await getTransactions({ limit: 20 });
-  return <TransactionManagementSection transactions={transactions} />;
+  const [transactions, categories] = await Promise.all([
+    getTransactions({ limit: 20 }),
+    getCategories(),
+  ]);
+  return (
+    <TransactionManagementSection
+      transactions={transactions}
+      categories={categories}
+    />
+  );
 }
 
 async function AsyncHeaderSection() {

@@ -42,19 +42,12 @@ export function InteractiveTransactionBadge({
   const [isPending, startTransition] = useTransition();
 
   const handleCategorySelect = (categoryId: string) => {
-    console.log(
-      "🔄 Updating transaction:",
-      transactionId,
-      "with category:",
-      categoryId
-    );
     startTransition(async () => {
       try {
         const result = await updateTransactionCategory(
           transactionId,
           categoryId
         );
-        console.log("📊 Update result:", result);
 
         if (result.success && result.transaction.category) {
           const updatedCategory = {
@@ -63,15 +56,12 @@ export function InteractiveTransactionBadge({
             icon: result.transaction.category.icon,
             color: result.transaction.category.color,
           };
-          console.log("✅ Calling onUpdate with:", updatedCategory);
           onUpdate?.(transactionId, updatedCategory);
           toast.success("Transaction categorized successfully");
         } else {
-          console.error("❌ Update failed or no category returned:", result);
           toast.error("Failed to update transaction");
         }
-      } catch (error) {
-        console.error("❌ Error updating transaction:", error);
+      } catch {
         toast.error("Failed to update transaction");
       }
     });
@@ -79,10 +69,6 @@ export function InteractiveTransactionBadge({
 
   // If transaction needs categorization or review, show select directly
   if (status === "NEEDS_CATEGORIZATION" || status === "NEEDS_REVIEW") {
-    console.log("🎯 Rendering Select component with categories:", categories);
-    console.log("🎯 Categories length:", categories);
-    console.log("🎯 Status:", status);
-
     const placeholder = isPending
       ? "Updating..."
       : status === "NEEDS_CATEGORIZATION"

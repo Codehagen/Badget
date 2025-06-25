@@ -5,8 +5,8 @@ import {
   getCategories,
 } from "@/actions/dashboard-actions";
 import { TransactionManagementSection } from "@/components/dashboard/data-table-section";
-import { TransactionTableSkeleton } from "@/components/dashboard/skeletons";
-import { TransactionsFilter } from "@/components/dashboard/transactions-filter";
+import { TransactionsOnlySkeleton } from "@/components/dashboard/skeletons";
+import { TransactionFilterWrapper } from "@/components/dashboard/transaction-filter-wrapper";
 import { TransactionsPagination } from "@/components/dashboard/transactions-pagination";
 import {
   IconCircleCheckFilled,
@@ -29,7 +29,10 @@ interface TransactionsPageProps {
   };
 }
 
-async function AllTransactionsContent({ searchParams }: TransactionsPageProps) {
+// Separate component for just the transactions table that can re-render independently
+async function TransactionsTableContent({
+  searchParams,
+}: TransactionsPageProps) {
   const params = await searchParams;
 
   const page = parseInt(params.page || "1");
@@ -47,18 +50,18 @@ async function AllTransactionsContent({ searchParams }: TransactionsPageProps) {
       | "NEEDS_REVIEW"
       | "IN_PROGRESS"
       | undefined,
+    type: params.type as "INCOME" | "EXPENSE" | "TRANSFER" | undefined,
     startDate: params.startDate ? new Date(params.startDate) : undefined,
     endDate: params.endDate ? new Date(params.endDate) : undefined,
   };
 
-  // Fetch data in parallel
-  const [transactionData, accounts, categories] = await Promise.all([
+  // Fetch only transaction data for this component
+  const [transactionData, categories] = await Promise.all([
     getAllTransactions({
       limit,
       offset,
       ...filters,
     }),
-    getFinancialAccounts(),
     getCategories(),
   ]);
 
@@ -82,6 +85,67 @@ async function AllTransactionsContent({ searchParams }: TransactionsPageProps) {
       : null,
   }));
 
+  // Serialize categories for client component
+  const serializedCategories = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    icon: category.icon || undefined,
+    color: category.color || undefined,
+  }));
+
+  return (
+    <div className="border rounded-lg">
+      <div className="p-6">
+        <TransactionManagementSection
+          transactions={transformedTransactions}
+          categories={serializedCategories}
+        />
+      </div>
+
+      {/* Pagination */}
+      <div className="border-t p-4">
+        <TransactionsPagination
+          currentPage={page}
+          totalPages={transactionData.totalPages}
+          totalCount={transactionData.totalCount}
+          pageSize={limit}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Component for static content that doesn't need to re-render
+async function StaticPageContent({ searchParams }: TransactionsPageProps) {
+  const params = await searchParams;
+
+  // Parse filter parameters for the filter bar
+  const filters = {
+    search: params.search,
+    accountId: params.account,
+    categoryId: params.category,
+    status: params.status as
+      | "RECONCILED"
+      | "NEEDS_CATEGORIZATION"
+      | "NEEDS_REVIEW"
+      | "IN_PROGRESS"
+      | undefined,
+    type: params.type as "INCOME" | "EXPENSE" | "TRANSFER" | undefined,
+    startDate: params.startDate ? new Date(params.startDate) : undefined,
+    endDate: params.endDate ? new Date(params.endDate) : undefined,
+  };
+
+  // Fetch static data (accounts, categories) and get total count for stats
+  const [accounts, categories, transactionData] = await Promise.all([
+    getFinancialAccounts(),
+    getCategories(),
+    getAllTransactions({
+      limit: 1, // We only need the total count, not the actual transactions
+      offset: 0,
+      ...filters,
+    }),
+  ]);
+
   // Serialize accounts (convert Decimal balance to number)
   const serializedAccounts = accounts.map((account) => ({
     id: account.id,
@@ -93,13 +157,13 @@ async function AllTransactionsContent({ searchParams }: TransactionsPageProps) {
   const serializedCategories = categories.map((category) => ({
     id: category.id,
     name: category.name,
-    icon: category.icon,
-    color: category.color,
+    icon: category.icon || undefined,
+    color: category.color || undefined,
   }));
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
+      {/* Stats Cards - These will be simplified since they don't need live filtering */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="border rounded-lg p-6">
           <div className="flex items-start justify-between">
@@ -110,7 +174,9 @@ async function AllTransactionsContent({ searchParams }: TransactionsPageProps) {
               <p className="text-sm font-medium text-muted-foreground">Total</p>
               <p className="text-2xl font-bold">{transactionData.totalCount}</p>
               <div className="flex items-center gap-1 text-xs">
-                <span className="text-muted-foreground">transactions</span>
+                <span className="text-muted-foreground">
+                  found with current filters
+                </span>
               </div>
             </div>
           </div>
@@ -123,17 +189,13 @@ async function AllTransactionsContent({ searchParams }: TransactionsPageProps) {
                 <IconCircleCheckFilled className="h-4 w-4 text-emerald-600" />
               </div>
               <p className="text-sm font-medium text-muted-foreground">
-                Reconciled
+                Showing
               </p>
               <p className="text-2xl font-bold text-emerald-600">
-                {
-                  transformedTransactions.filter(
-                    (t) => t.status === "RECONCILED"
-                  ).length
-                }
+                {Math.min(transactionData.totalCount, 50)}
               </p>
               <div className="flex items-center gap-1 text-xs">
-                <span className="text-muted-foreground">completed</span>
+                <span className="text-muted-foreground">per page</span>
               </div>
             </div>
           </div>
@@ -145,18 +207,12 @@ async function AllTransactionsContent({ searchParams }: TransactionsPageProps) {
               <div className="flex items-center gap-2">
                 <IconAlertTriangle className="h-4 w-4 text-orange-600" />
               </div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Pending
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">Pages</p>
               <p className="text-2xl font-bold text-orange-600">
-                {
-                  transformedTransactions.filter(
-                    (t) => t.status !== "RECONCILED" || !t.category
-                  ).length
-                }
+                {transactionData.totalPages}
               </p>
               <div className="flex items-center gap-1 text-xs">
-                <span className="text-muted-foreground">need attention</span>
+                <span className="text-muted-foreground">available</span>
               </div>
             </div>
           </div>
@@ -169,69 +225,37 @@ async function AllTransactionsContent({ searchParams }: TransactionsPageProps) {
                 <IconCalendarMonth className="h-4 w-4 text-blue-600" />
               </div>
               <p className="text-sm font-medium text-muted-foreground">
-                This Month
+                Filters
               </p>
               <p className="text-2xl font-bold text-blue-600">
-                {
-                  transformedTransactions.filter((t) => {
-                    const txDate = new Date(t.date);
-                    const now = new Date();
-                    return (
-                      txDate.getMonth() === now.getMonth() &&
-                      txDate.getFullYear() === now.getFullYear()
-                    );
-                  }).length
-                }
+                {Object.values(filters).filter(Boolean).length}
               </p>
               <div className="flex items-center gap-1 text-xs">
-                <span className="text-muted-foreground">current month</span>
+                <span className="text-muted-foreground">active</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <TransactionsFilter
+      {/* Linear-inspired Filter Bar */}
+      <TransactionFilterWrapper
         accounts={serializedAccounts}
         categories={serializedCategories}
         totalCount={transactionData.totalCount}
+        currentFilters={filters}
       />
-
-      {/* Transactions Table */}
-      <div className="border rounded-lg">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold">All Transactions</h3>
-              <p className="text-sm text-muted-foreground">
-                Manage and categorize all your financial transactions
-              </p>
-            </div>
-          </div>
-          <TransactionManagementSection
-            transactions={transformedTransactions}
-            categories={serializedCategories}
-          />
-        </div>
-
-        {/* Pagination */}
-        <div className="border-t p-4">
-          <TransactionsPagination
-            currentPage={page}
-            totalPages={transactionData.totalPages}
-            totalCount={transactionData.totalCount}
-            pageSize={limit}
-          />
-        </div>
-      </div>
     </div>
   );
 }
 
-export default function TransactionsPage({
+export default async function TransactionsPage({
   searchParams,
 }: TransactionsPageProps) {
+  // Await searchParams to avoid Next.js warning
+  const params = await searchParams;
+  const searchKey = JSON.stringify(params);
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex flex-col gap-2">
@@ -241,8 +265,12 @@ export default function TransactionsPage({
         </p>
       </div>
 
-      <Suspense fallback={<TransactionTableSkeleton />}>
-        <AllTransactionsContent searchParams={searchParams} />
+      {/* Static content that doesn't re-render */}
+      <StaticPageContent searchParams={searchParams} />
+
+      {/* Only the transactions table re-renders with skeleton */}
+      <Suspense key={searchKey} fallback={<TransactionsOnlySkeleton />}>
+        <TransactionsTableContent searchParams={searchParams} />
       </Suspense>
     </div>
   );
