@@ -345,39 +345,41 @@ export function CryptoAssetDialog({
                       ).toFixed(2)}
                     </span>
                   </div>
-                  {form.watch("purchasePrice") > 0 && (
-                    <>
-                      <div className="flex justify-between">
-                        <span>Purchase Value:</span>
-                        <span>
-                          $
-                          {(
-                            form.watch("amount") * form.watch("purchasePrice")
-                          ).toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs pt-1 border-t">
-                        <span>Unrealized P&L:</span>
-                        <span
-                          className={
-                            form.watch("amount") *
+                  {form.watch("purchasePrice") &&
+                    form.watch("purchasePrice")! > 0 && (
+                      <>
+                        <div className="flex justify-between">
+                          <span>Purchase Value:</span>
+                          <span>
+                            $
+                            {(
+                              form.watch("amount") *
+                              form.watch("purchasePrice")!
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-xs pt-1 border-t">
+                          <span>Unrealized P&L:</span>
+                          <span
+                            className={
+                              form.watch("amount") *
+                                (form.watch("currentPrice") -
+                                  form.watch("purchasePrice")!) >=
+                              0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }
+                          >
+                            $
+                            {(
+                              form.watch("amount") *
                               (form.watch("currentPrice") -
-                                form.watch("purchasePrice")) >=
-                            0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }
-                        >
-                          $
-                          {(
-                            form.watch("amount") *
-                            (form.watch("currentPrice") -
-                              form.watch("purchasePrice"))
-                          ).toFixed(2)}
-                        </span>
-                      </div>
-                    </>
-                  )}
+                                form.watch("purchasePrice")!)
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                      </>
+                    )}
                 </div>
               </div>
             )}

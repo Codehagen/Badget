@@ -36,9 +36,17 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
+// Stock search result interface
+interface StockSearchResult {
+  symbol: string;
+  name: string;
+  price: number;
+  change: string;
+}
+
 // Mock stock search results - In real app, this would come from Alpha Vantage API
-const mockStockSearch = async (query: string) => {
-  const mockStocks = [
+const mockStockSearch = async (query: string): Promise<StockSearchResult[]> => {
+  const mockStocks: StockSearchResult[] = [
     { symbol: "AAPL", name: "Apple Inc.", price: 175.5, change: "+2.3%" },
     { symbol: "GOOGL", name: "Alphabet Inc.", price: 142.8, change: "+1.2%" },
     {
@@ -93,9 +101,11 @@ export function StockAssetDialog({
 }: StockAssetDialogProps) {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [selectedStock, setSelectedStock] = useState<any>(null);
+  const [selectedStock, setSelectedStock] = useState<StockSearchResult | null>(
+    null
+  );
   const router = useRouter();
 
   const form = useForm<StockFormData>({
@@ -128,7 +138,7 @@ export function StockAssetDialog({
     }
   }, []);
 
-  const handleStockSelect = (stock: any) => {
+  const handleStockSelect = (stock: StockSearchResult) => {
     setSelectedStock(stock);
     form.setValue("symbol", stock.symbol);
     form.setValue("companyName", stock.name);
@@ -469,40 +479,41 @@ export function StockAssetDialog({
                           ).toFixed(2)}
                         </span>
                       </div>
-                      {form.watch("purchasePrice") > 0 && (
-                        <>
-                          <div className="flex justify-between">
-                            <span>Purchase Value:</span>
-                            <span>
-                              $
-                              {(
-                                form.watch("shares") *
-                                form.watch("purchasePrice")
-                              ).toFixed(2)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-xs pt-1 border-t">
-                            <span>Unrealized P&L:</span>
-                            <span
-                              className={
-                                form.watch("shares") *
+                      {form.watch("purchasePrice") &&
+                        form.watch("purchasePrice")! > 0 && (
+                          <>
+                            <div className="flex justify-between">
+                              <span>Purchase Value:</span>
+                              <span>
+                                $
+                                {(
+                                  form.watch("shares") *
+                                  form.watch("purchasePrice")!
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs pt-1 border-t">
+                              <span>Unrealized P&L:</span>
+                              <span
+                                className={
+                                  form.watch("shares") *
+                                    (form.watch("currentPrice") -
+                                      form.watch("purchasePrice")!) >=
+                                  0
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }
+                              >
+                                $
+                                {(
+                                  form.watch("shares") *
                                   (form.watch("currentPrice") -
-                                    form.watch("purchasePrice")) >=
-                                0
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }
-                            >
-                              $
-                              {(
-                                form.watch("shares") *
-                                (form.watch("currentPrice") -
-                                  form.watch("purchasePrice"))
-                              ).toFixed(2)}
-                            </span>
-                          </div>
-                        </>
-                      )}
+                                    form.watch("purchasePrice")!)
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                          </>
+                        )}
                     </div>
                   </div>
                 )}

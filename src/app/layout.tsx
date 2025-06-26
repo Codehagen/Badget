@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@/components/theme-provider";
-import { CommandMenu } from "@/components/command-menu";
+import { CommandMenu } from "@/components/dialog/command-menu";
 import { constructMetadata } from "@/lib/construct-metadata";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
