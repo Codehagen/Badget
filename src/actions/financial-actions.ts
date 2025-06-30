@@ -393,3 +393,52 @@ export async function getEnhancedAccounts(): Promise<EnhancedAccount[]> {
     await prisma.$disconnect();
   }
 }
+
+/**
+ * Get a single financial account by ID
+ */
+export async function getFinancialAccountById(accountId: string) {
+  const familyId = await getActiveFamilyId();
+  if (!familyId) {
+    return null;
+  }
+
+  const prisma = getPrismaClient();
+
+  try {
+    const account = await prisma.financialAccount.findFirst({
+      where: {
+        id: accountId,
+        familyId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        balance: true,
+        currency: true,
+        institution: true,
+        color: true,
+        description: true,
+        accountNumber: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!account) {
+      return null;
+    }
+
+    return {
+      ...account,
+      balance: Number(account.balance),
+    };
+  } catch (error) {
+    console.error("Error fetching account by ID:", error);
+    return null;
+  } finally {
+    await prisma.$disconnect();
+  }
+}

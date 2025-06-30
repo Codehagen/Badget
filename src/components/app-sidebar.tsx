@@ -39,7 +39,7 @@ const data = {
     },
     {
       title: "Accounts",
-      url: "/dashboard/financial",
+      url: "/dashboard/accounts",
       icon: IconWallet,
     },
     {

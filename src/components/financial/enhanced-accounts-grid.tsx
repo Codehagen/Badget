@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Activity,
 } from "lucide-react";
+import Link from "next/link";
 import { AccountMiniChart } from "./charts/account-mini-chart";
 import type { EnhancedAccount } from "@/actions/financial-actions";
 
@@ -68,9 +69,10 @@ export function EnhancedAccountsGrid({ accounts }: EnhancedAccountsGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {accounts.map((account) => (
-        <div
+        <Link
           key={account.id}
-          className="space-y-4 border rounded-lg p-4 relative"
+          href={`/dashboard/financial/${account.id}`}
+          className="space-y-4 border rounded-lg p-4 relative block hover:shadow-md transition-shadow cursor-pointer"
         >
           {/* Header */}
           <div className="flex items-start justify-between">
@@ -133,7 +135,7 @@ export function EnhancedAccountsGrid({ accounts }: EnhancedAccountsGridProps) {
             <span>{account.recentTransactionCount} transactions</span>
             <span>last 6 months</span>
           </div>
-        </div>
+        </Link>
       ))}
 
       {accounts.length === 0 && (
