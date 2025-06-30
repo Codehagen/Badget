@@ -1,8 +1,10 @@
+import { FinancialTabs } from "@/components/financial/financial-tabs";
 import {
+  SuspendedFinancialOverviewSection,
   SuspendedAccountsHeaderSection,
   SuspendedAccountsFilterSection,
-  SuspendedAccountsGridSection,
-} from "@/components/accounts/accounts-async-components";
+  SuspendedEnhancedAccountsGridSection,
+} from "@/components/financial/financial-async-components";
 
 interface FinancialPageProps {
   searchParams: {
@@ -12,20 +14,34 @@ interface FinancialPageProps {
   };
 }
 
-export default async function FinancialPage({ searchParams }: FinancialPageProps) {
+export default async function FinancialPage({
+  searchParams,
+}: FinancialPageProps) {
+  const awaitedSearchParams = await searchParams;
+
   const filters = {
-    search: searchParams.search,
-    type: searchParams.type,
-    institution: searchParams.institution,
+    search: awaitedSearchParams.search,
+    type: awaitedSearchParams.type,
+    institution: awaitedSearchParams.institution,
   };
 
-  const searchKey = JSON.stringify(searchParams);
+  const searchKey = JSON.stringify(awaitedSearchParams);
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <SuspendedAccountsHeaderSection />
-      <SuspendedAccountsFilterSection filters={filters} />
-      <SuspendedAccountsGridSection key={`grid-${searchKey}`} filters={filters} />
+      <FinancialTabs
+        header={<SuspendedAccountsHeaderSection />}
+        accountsContent={
+          <>
+            <SuspendedAccountsFilterSection filters={filters} />
+            <SuspendedEnhancedAccountsGridSection
+              key={`grid-${searchKey}`}
+              filters={filters}
+            />
+          </>
+        }
+        overviewContent={<SuspendedFinancialOverviewSection />}
+      />
     </div>
   );
 }

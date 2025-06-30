@@ -3,12 +3,10 @@
 import * as React from "react";
 import {
   IconCamera,
-  IconChartBar,
   IconCreditCard,
   IconDashboard,
   IconFileAi,
   IconFileDescription,
-  IconFolder,
   IconHelp,
   IconPigMoney,
   IconSearch,
@@ -40,6 +38,11 @@ const data = {
       icon: IconDashboard,
     },
     {
+      title: "Accounts",
+      url: "/dashboard/financial",
+      icon: IconWallet,
+    },
+    {
       title: "Transactions",
       url: "/dashboard/transactions",
       icon: IconCreditCard,
@@ -49,16 +52,16 @@ const data = {
       url: "/investments",
       icon: IconTrendingUp,
     },
-    {
-      title: "Analytics",
-      url: "/analytics",
-      icon: IconChartBar,
-    },
-    {
-      title: "Projects",
-      url: "/projects",
-      icon: IconFolder,
-    },
+    // {
+    //   title: "Analytics",
+    //   url: "/analytics",
+    //   icon: IconChartBar,
+    // },
+    // {
+    //   title: "Projects",
+    //   url: "/projects",
+    //   icon: IconFolder,
+    // },
   ],
   navClouds: [
     {
