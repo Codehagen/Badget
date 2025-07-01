@@ -34,76 +34,80 @@ function formatCurrency(amount: number, currency: string = "USD") {
 
 export function AccountDetailHeader({ account }: AccountDetailHeaderProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-6">
       {/* Navigation */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard/financial">
+          <Link href="/dashboard/financial" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Accounts
           </Link>
         </Button>
       </div>
 
-      {/* Account Header */}
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            {account.color && (
-              <span
-                className="inline-block h-3 w-3 rounded-full"
-                style={{ backgroundColor: account.color }}
-              />
-            )}
-            <h1 className="text-3xl font-bold">{account.name}</h1>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <Badge variant="secondary" className="text-sm">
-              {account.type.replace(/_/g, " ")}
-            </Badge>
-            {account.institution && (
-              <span className="text-muted-foreground">{account.institution}</span>
-            )}
-            {account.accountNumber && (
-              <span className="text-sm text-muted-foreground">
-                •••• {account.accountNumber.slice(-4)}
-              </span>
-            )}
-          </div>
+      {/* Account Header Card */}
+      <div className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm">
+        <div className="px-6">
+          <div className="flex items-start justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                {account.color && (
+                  <span
+                    className="inline-block h-3 w-3 rounded-full"
+                    style={{ backgroundColor: account.color }}
+                  />
+                )}
+                <h1 className="text-3xl font-bold">{account.name}</h1>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <Badge variant="secondary" className="text-sm">
+                  {account.type.replace(/_/g, " ")}
+                </Badge>
+                {account.institution && (
+                  <span className="text-muted-foreground">{account.institution}</span>
+                )}
+                {account.accountNumber && (
+                  <span className="text-sm text-muted-foreground">
+                    •••• {account.accountNumber.slice(-4)}
+                  </span>
+                )}
+              </div>
 
-          {account.description && (
-            <p className="text-muted-foreground max-w-2xl">{account.description}</p>
-          )}
-        </div>
+              {account.description && (
+                <p className="text-muted-foreground max-w-2xl">{account.description}</p>
+              )}
+            </div>
 
-        <div className="flex items-center gap-2">
-          <div className="text-right">
-            <p className="text-sm text-muted-foreground">Current Balance</p>
-            <p className="text-2xl font-bold">
-              {formatCurrency(account.balance, account.currency)}
-            </p>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Current Balance</p>
+                <p className="text-3xl font-bold">
+                  {formatCurrency(account.balance, account.currency)}
+                </p>
+              </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Edit Account
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    Export Transactions
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="text-red-600">
+                    Deactivate Account
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <Settings className="h-4 w-4 mr-2" />
-                Edit Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                Export Transactions
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600">
-                Deactivate Account
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { Search, Filter } from "lucide-react";
+import { Search } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Transaction {
   id: string;
@@ -70,21 +69,22 @@ export function AccountTransactionsList({
   searchParams,
 }: AccountTransactionsListProps) {
   return (
-    <Card>
-      <CardHeader>
+    <div className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm">
+      {/* Header */}
+      <div className="px-6">
         <div className="flex items-center justify-between">
-          <CardTitle>Transactions</CardTitle>
+          <h3 className="text-lg font-semibold">Transactions</h3>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search transactions..."
-                className="pl-8 w-64"
+                className="pl-10 w-64 bg-background"
                 defaultValue={searchParams.search || ""}
               />
             </div>
             <Select defaultValue={searchParams.status || "all"}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 bg-background">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -97,8 +97,10 @@ export function AccountTransactionsList({
             </Select>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+
+      {/* Content */}
+      <div className="px-6">
         <div className="space-y-4">
           {transactions.length === 0 ? (
             <div className="text-center py-8">
@@ -109,7 +111,7 @@ export function AccountTransactionsList({
               {transactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-[color,box-shadow]"
                 >
                   <div className="flex items-center gap-4">
                     <div className="space-y-1">
@@ -162,7 +164,7 @@ export function AccountTransactionsList({
               
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4">
+                <div className="flex items-center justify-between pt-4 border-t">
                   <p className="text-sm text-muted-foreground">
                     Showing {(currentPage - 1) * 20 + 1} to{" "}
                     {Math.min(currentPage * 20, totalCount)} of {totalCount} transactions
@@ -198,7 +200,7 @@ export function AccountTransactionsList({
             </>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
