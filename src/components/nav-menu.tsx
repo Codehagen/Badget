@@ -2,6 +2,7 @@
 
 import { siteConfig } from "@/lib/config";
 import { motion } from "motion/react";
+import Link from "next/link";
 import React, { useRef, useState } from "react";
 
 interface NavItem {
@@ -76,6 +77,11 @@ export function NavMenu() {
     e: React.MouseEvent<HTMLAnchorElement>,
     item: NavItem,
   ) => {
+    // If it's an external link (starts with "/"), don't prevent default
+    if (item.href.startsWith("/")) {
+      return; // Let the browser handle the navigation
+    }
+
     e.preventDefault();
 
     const targetId = item.href.substring(1);
@@ -121,14 +127,20 @@ export function NavMenu() {
           <li
             key={item.name}
             className={`z-10 cursor-pointer h-full flex items-center justify-center px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-              activeSection === item.href.substring(1)
+              activeSection === item.href.substring(1) && !item.href.startsWith("/")
                 ? "text-primary"
                 : "text-primary/60 hover:text-primary"
             } tracking-tight`}
           >
-            <a href={item.href} onClick={(e) => handleClick(e, item)}>
-              {item.name}
-            </a>
+            {item.href.startsWith("/") ? (
+              <Link href={item.href} className="hover:text-primary">
+                {item.name}
+              </Link>
+            ) : (
+              <a href={item.href} onClick={(e) => handleClick(e, item)}>
+                {item.name}
+              </a>
+            )}
           </li>
         ))}
         {isReady && (

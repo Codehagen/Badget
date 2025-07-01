@@ -1,0 +1,227 @@
+---
+title: "Custom Domains"
+description: "Learn how to set up and configure custom domains for your Badget links."
+publishedAt: "2024-01-12"
+updatedAt: "2024-01-18"
+summary: "Step-by-step guide to setting up custom domains for branded short links."
+tags: ["domains", "branding", "setup"]
+---
+
+# Custom Domains
+
+Custom domains allow you to use your own branded domain for shortened links instead of the default `bdg.et` domain. This helps maintain brand consistency and builds trust with your audience.
+
+## Benefits of Custom Domains
+
+- **Brand Recognition**: Use your own domain to reinforce your brand
+- **Trust**: Users are more likely to click links from recognized domains
+- **Analytics**: Better tracking and attribution for your campaigns
+- **Control**: Full control over your link structure and appearance
+
+## Requirements
+
+To set up a custom domain, you'll need:
+
+1. **A domain name** that you own and control
+2. **DNS access** to configure DNS records
+3. **SSL certificate** (automatically provided by Badget)
+4. **Pro or Enterprise plan** (custom domains not available on free plan)
+
+## Setup Process
+
+### Step 1: Add Your Domain
+
+1. Navigate to **Settings** → **Domains** in your Badget dashboard
+2. Click **"Add Custom Domain"**
+3. Enter your domain name (e.g., `short.yourcompany.com`)
+4. Click **"Add Domain"**
+
+### Step 2: Configure DNS
+
+Add the following DNS records to your domain:
+
+#### For Subdomains (Recommended)
+
+If using a subdomain like `short.yourcompany.com`:
+
+```
+Type: CNAME
+Name: short
+Value: cname.badget.app
+TTL: 3600
+```
+
+#### For Root Domains
+
+If using a root domain like `yourcompany.co`:
+
+```
+Type: A
+Name: @
+Value: 76.76.19.123
+TTL: 3600
+
+Type: A
+Name: @
+Value: 76.76.21.123
+TTL: 3600
+```
+
+### Step 3: Verify Domain
+
+1. Return to your Badget dashboard
+2. Click **"Verify Domain"** next to your added domain
+3. Wait for DNS propagation (usually 5-60 minutes)
+4. Once verified, your domain status will show as "Active"
+
+### Step 4: Configure SSL
+
+SSL certificates are automatically provisioned and renewed by Badget. This process typically takes 5-10 minutes after domain verification.
+
+## Domain Configuration Options
+
+### Default Domain
+
+Set one of your custom domains as the default for new links:
+
+1. Go to **Settings** → **Domains**
+2. Click the **"Set as Default"** button next to your preferred domain
+3. All new links will use this domain unless specified otherwise
+
+### Link-Specific Domains
+
+You can choose which domain to use when creating individual links:
+
+```bash
+curl -X POST https://api.badget.app/links \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "url": "https://example.com",
+    "domain": "short.yourcompany.com"
+  }'
+```
+
+## Best Practices
+
+### Subdomain Recommendations
+
+- `short.yourcompany.com`
+- `link.yourcompany.com` 
+- `go.yourcompany.com`
+- `click.yourcompany.com`
+
+### DNS Considerations
+
+1. **TTL Settings**: Use lower TTL values (300-3600 seconds) for easier changes
+2. **CDN Compatibility**: Our CNAME works with most CDN providers
+3. **Backup Records**: Keep a record of your original DNS settings
+
+### Security
+
+- Always use HTTPS (automatically configured)
+- Monitor your domain for unauthorized use
+- Set up domain monitoring alerts
+- Review access logs regularly
+
+## Troubleshooting
+
+### Common Issues
+
+#### Domain Not Verifying
+
+1. **Check DNS Propagation**: Use tools like whatsmydns.net
+2. **Verify DNS Records**: Ensure exact match with provided values
+3. **Wait Longer**: DNS changes can take up to 24 hours
+4. **Contact Support**: If issues persist after 24 hours
+
+#### SSL Certificate Issues
+
+- SSL certificates are automatically managed
+- If you see SSL errors, wait 10-15 minutes and try again
+- For persistent issues, contact our support team
+
+#### Links Not Working
+
+1. **Verify Domain Status**: Check dashboard for "Active" status
+2. **Test DNS Resolution**: Use `nslookup` or `dig` commands
+3. **Clear Browser Cache**: Try in incognito/private mode
+4. **Check Firewall Settings**: Ensure ports 80 and 443 are open
+
+### DNS Commands for Verification
+
+Check your DNS configuration:
+
+```bash
+# Check CNAME record
+dig short.yourcompany.com CNAME
+
+# Check A record
+dig yourcompany.co A
+
+# Verify SSL certificate
+openssl s_client -connect short.yourcompany.com:443
+```
+
+## Migration from Other Services
+
+### From Bitly
+
+1. Export your existing links from Bitly
+2. Set up your custom domain in Badget
+3. Use our API to bulk import links
+4. Update any hardcoded references
+
+### From Other Providers
+
+We provide migration tools and support for:
+
+- TinyURL
+- Short.io
+- Rebrandly
+- Custom solutions
+
+Contact our migration team for assistance.
+
+## Enterprise Features
+
+Enterprise customers get additional domain features:
+
+- **Multiple Domains**: Unlimited custom domains
+- **Advanced Analytics**: Domain-specific analytics
+- **White-label Options**: Remove Badget branding
+- **Priority Support**: Dedicated domain setup assistance
+- **SLA Guarantees**: 99.9% uptime commitment
+
+## API Reference
+
+### Add Domain
+
+```bash
+POST /domains
+{
+  "domain": "short.yourcompany.com"
+}
+```
+
+### List Domains
+
+```bash
+GET /domains
+```
+
+### Delete Domain
+
+```bash
+DELETE /domains/{domain}
+```
+
+## Support
+
+Need help with custom domains?
+
+- **Documentation**: Check our detailed setup guides
+- **Live Chat**: Available 9 AM - 5 PM PST
+- **Email Support**: domains@badget.app
+- **Video Tutorials**: Available in our help center
+
+For enterprise customers, dedicated domain specialists are available 24/7.
