@@ -1,6 +1,7 @@
 // content-collections.ts
 import { defineCollection, defineConfig } from "@content-collections/core";
 import { compileMDX } from "@content-collections/mdx";
+import { z } from "zod";
 import readingTime from "reading-time";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypePrettyCode from "rehype-pretty-code";
@@ -9,7 +10,7 @@ var blog = defineCollection({
   name: "blog",
   directory: "content/blog",
   include: "**/*.mdx",
-  schema: (z) => ({
+  schema: z.object({
     title: z.string(),
     description: z.string(),
     publishedAt: z.string(),
@@ -60,7 +61,7 @@ var help = defineCollection({
   name: "help",
   directory: "content/help",
   include: "**/*.mdx",
-  schema: (z) => ({
+  schema: z.object({
     title: z.string(),
     description: z.string(),
     publishedAt: z.string(),
