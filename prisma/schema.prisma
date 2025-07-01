@@ -242,6 +242,7 @@ model Family {
   Budget           Budget[]
   Goal             Goal[]
   InvestmentAsset  InvestmentAsset[]
+  PlaidItem        PlaidItem[]
 
   @@map("families")
 }
@@ -340,6 +341,7 @@ model FinancialAccount {
   transactions           Transaction[]
   budgets                Budget[]
   transferToTransactions Transaction[] @relation("TransferTo")
+  plaidAccounts          PlaidAccount[]
 
   @@index([familyId])
   @@index([familyId, type])
@@ -507,6 +509,56 @@ model InvestmentAsset {
   @@index([familyId])
   @@index([familyId, assetType])
   @@map("investment_assets")
+}
+
+// ---------- PLAID INTEGRATION ----------
+// Models for storing Plaid connection data
+
+model PlaidItem {
+  id          String   @id @default(cuid())
+  accessToken String   @unique
+  itemId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Institution information
+  institutionId   String?
+  institutionName String?
+
+  // Multi-tenant relationship
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // Related financial accounts
+  financialAccounts PlaidAccount[]
+
+  @@unique([familyId, itemId])
+  @@index([familyId])
+  @@map("plaid_items")
+}
+
+model PlaidAccount {
+  id               String   @id @default(cuid())
+  plaidAccountId   String   @unique
+  financialAccountId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Plaid-specific account data
+  accountName     String
+  accountType     String
+  accountSubtype  String?
+  mask            String?
+  
+  // Relationships
+  plaidItemId String
+  plaidItem   PlaidItem @relation(fields: [plaidItemId], references: [id], onDelete: Cascade)
+  
+  financialAccount FinancialAccount? @relation(fields: [financialAccountId], references: [id])
+
+  @@index([plaidItemId])
+  @@index([financialAccountId])
+  @@map("plaid_accounts")
 }
 
 // ---------- INDEXES AND CONSTRAINTS ----------
