@@ -6,6 +6,8 @@ import { Calendar, Clock, User, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import { TableOfContents } from "@/components/table-of-contents";
+import { mdxComponents } from "@/components/mdx/mdx-components";
 
 export async function generateStaticParams() {
   return allBlogs.map((post: any) => ({
@@ -50,7 +52,7 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
 
   return (
     <div className="container mx-auto px-6 py-12">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Back Button */}
         <div className="mb-8">
           <Button variant="ghost" asChild className="p-0 h-auto">
@@ -61,63 +63,83 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
           </Button>
         </div>
 
-        {/* Article Header */}
-        <header className="mb-12">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              <time dateTime={post.publishedAt}>
-                {formatDistanceToNow(new Date(post.publishedAt), { addSuffix: true })}
-              </time>
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              <span>{post.readingTime}</span>
-            </div>
-            {post.author && (
-              <div className="flex items-center gap-1">
-                <User className="w-4 h-4" />
-                <span>{post.author}</span>
+        <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-8">
+            {/* Article Header */}
+            <header className="mb-12">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  <time dateTime={post.publishedAt}>
+                    {formatDistanceToNow(new Date(post.publishedAt), { addSuffix: true })}
+                  </time>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  <span>{post.readingTime}</span>
+                </div>
+                {post.author && (
+                  <div className="flex items-center gap-1">
+                    <User className="w-4 h-4" />
+                    <span>{post.author}</span>
+                  </div>
+                )}
               </div>
-            )}
+
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
+                {post.title}
+              </h1>
+
+              <p className="text-xl text-muted-foreground leading-relaxed mb-6">
+                {post.description}
+              </p>
+
+              {post.tags && post.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {post.tags.map((tag: string) => (
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </header>
+
+            {/* Article Content */}
+            <article className="prose prose-gray dark:prose-invert max-w-none
+                               prose-headings:font-bold prose-headings:tracking-tight
+                               prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
+                               prose-p:leading-relaxed prose-p:text-muted-foreground
+                               prose-strong:text-foreground prose-strong:font-semibold
+                               prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                               prose-blockquote:border-l-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4
+                               prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:text-sm
+                               prose-pre:bg-muted prose-pre:border prose-pre:rounded-lg
+                               prose-img:rounded-lg prose-img:border
+                               prose-hr:border-border
+                               prose-table:border prose-table:rounded-lg
+                               prose-th:bg-muted prose-th:font-semibold
+                               prose-td:border-border prose-th:border-border">
+              <MDXContent code={post.mdx} components={mdxComponents} />
+            </article>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
-            {post.title}
-          </h1>
-
-          <p className="text-xl text-muted-foreground leading-relaxed mb-6">
-            {post.description}
-          </p>
-
-          {post.tags && post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {post.tags.map((tag: string) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
+          {/* Sidebar with Table of Contents */}
+          <div className="lg:col-span-4">
+            <div className="lg:sticky lg:top-24">
+              {/* Mobile Table of Contents */}
+              <div className="lg:hidden mb-8 bg-muted/30 rounded-lg p-4 border border-border">
+                <TableOfContents />
+              </div>
+              
+              {/* Desktop Table of Contents */}
+              <div className="hidden lg:block bg-muted/30 rounded-lg p-6 border border-border">
+                <TableOfContents />
+              </div>
             </div>
-          )}
-        </header>
-
-        {/* Article Content */}
-        <article className="prose prose-gray dark:prose-invert max-w-none
-                           prose-headings:font-bold prose-headings:tracking-tight
-                           prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
-                           prose-p:leading-relaxed prose-p:text-muted-foreground
-                           prose-strong:text-foreground prose-strong:font-semibold
-                           prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-                           prose-blockquote:border-l-primary prose-blockquote:bg-muted/50 prose-blockquote:py-2 prose-blockquote:px-4
-                           prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:text-sm
-                           prose-pre:bg-muted prose-pre:border prose-pre:rounded-lg
-                           prose-img:rounded-lg prose-img:border
-                           prose-hr:border-border
-                           prose-table:border prose-table:rounded-lg
-                           prose-th:bg-muted prose-th:font-semibold
-                           prose-td:border-border prose-th:border-border">
-          <MDXContent code={post.mdx} />
-        </article>
+          </div>
+        </div>
 
         {/* Related Posts */}
         {post.related && post.related.length > 0 && (

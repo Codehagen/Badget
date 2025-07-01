@@ -1,0 +1,3 @@
+# This is a placeholder for the Sarah avatar image
+# In a real implementation, this would be a .jpg or .png file
+# For now, the Image component will show a fallback
