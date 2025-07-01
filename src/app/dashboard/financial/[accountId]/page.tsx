@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { getFinancialAccountById } from "@/actions/financial-actions";
-import { getAllTransactions } from "@/actions/dashboard-actions";
+import { getAllTransactions, getCategories } from "@/actions/dashboard-actions";
 import { AccountDetailHeader } from "@/components/financial/account-detail-header";
 import { AccountDetailMetrics } from "@/components/financial/account-detail-metrics";
 import { AccountTransactionsList } from "@/components/financial/account-transactions-list";
+import { TransactionStatus } from "@/types/filters";
 import { Suspense } from "react";
 
 interface AccountDetailPageProps {
@@ -23,12 +24,12 @@ export default async function AccountDetailPage({
 }: AccountDetailPageProps) {
   const awaitedParams = await params;
   const awaitedSearchParams = await searchParams;
-  
+
   const { accountId } = awaitedParams;
-  
+
   // Get account details
   const account = await getFinancialAccountById(accountId);
-  
+
   if (!account) {
     notFound();
   }
@@ -41,31 +42,36 @@ export default async function AccountDetailPage({
   const transactionFilters = {
     accountId,
     search: awaitedSearchParams.search,
-    status: awaitedSearchParams.status as any,
+    status: awaitedSearchParams.status as TransactionStatus,
     limit,
     offset,
   };
 
-  const transactionsData = await getAllTransactions(transactionFilters);
+  const [transactionsData, categories] = await Promise.all([
+    getAllTransactions(transactionFilters),
+    getCategories(),
+  ]);
+
+  // Create a key that changes when search params change to trigger re-renders
+  const searchKey = JSON.stringify(awaitedSearchParams);
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      {/* Account Header */}
       <AccountDetailHeader account={account} />
-      
-      {/* Account Metrics */}
-      <Suspense fallback={<div className="h-32 animate-pulse bg-muted rounded-lg" />}>
+      <Suspense
+        fallback={<div className="h-32 animate-pulse bg-muted rounded-lg" />}
+      >
         <AccountDetailMetrics account={account} />
       </Suspense>
-      
-      {/* Account Transactions */}
       <AccountTransactionsList
+        key={`transactions-${searchKey}`}
         account={account}
         transactions={transactionsData.transactions}
         totalCount={transactionsData.totalCount}
         totalPages={transactionsData.totalPages}
         currentPage={page}
         searchParams={awaitedSearchParams}
+        categories={categories}
       />
     </div>
   );

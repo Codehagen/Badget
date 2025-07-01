@@ -61,7 +61,7 @@ export function AccountDetailMetrics({ account }: AccountDetailMetricsProps) {
       title: "Transactions",
       value: metrics.transactionCount.toString(),
       icon: Activity,
-      color: "text-purple-600", 
+      color: "text-purple-600",
       bgColor: "bg-purple-50 dark:bg-purple-950",
       description: "This month",
     },
@@ -72,26 +72,21 @@ export function AccountDetailMetrics({ account }: AccountDetailMetricsProps) {
       {metricCards.map((metric, index) => {
         const IconComponent = metric.icon;
         return (
-          <div
-            key={index}
-            className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
-          >
-            <div className="px-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`p-2 rounded-md ${metric.bgColor}`}>
-                      <IconComponent className={`h-4 w-4 ${metric.color}`} />
-                    </div>
+          <div key={index} className="border rounded-lg p-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-md ${metric.bgColor}`}>
+                    <IconComponent className={`h-4 w-4 ${metric.color}`} />
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {metric.title}
-                  </p>
-                  <p className="text-2xl font-bold">{metric.value}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {metric.description}
-                  </p>
                 </div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {metric.title}
+                </p>
+                <p className="text-2xl font-bold">{metric.value}</p>
+                <p className="text-xs text-muted-foreground">
+                  {metric.description}
+                </p>
               </div>
             </div>
           </div>

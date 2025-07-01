@@ -74,62 +74,60 @@ export function EnhancedAccountsGrid({ accounts }: EnhancedAccountsGridProps) {
           href={`/dashboard/financial/${account.id}`}
           className="group block"
         >
-          <div className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm transition-[color,box-shadow] hover:shadow-md cursor-pointer">
+          <div className="border rounded-lg p-6 transition-[color,box-shadow] hover:shadow-md cursor-pointer space-y-4">
             {/* Header */}
-            <div className="px-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-base font-semibold flex items-center gap-2">
-                    {account.color && (
-                      <span
-                        className="inline-block h-2 w-2 rounded-full"
-                        style={{ backgroundColor: account.color }}
-                      />
-                    )}
-                    {account.name}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {account.type.replace(/_/g, " ")}
-                    </span>
-                    <Badge
-                      variant="secondary"
-                      className={`text-xs ${getStatusColor(account.status)}`}
-                    >
-                      {getStatusIcon(account.status)}
-                      <span className="ml-1 capitalize">{account.status}</span>
-                    </Badge>
-                  </div>
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold flex items-center gap-2">
+                  {account.color && (
+                    <span
+                      className="inline-block h-2 w-2 rounded-full"
+                      style={{ backgroundColor: account.color }}
+                    />
+                  )}
+                  {account.name}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {account.type.replace(/_/g, " ")}
+                  </span>
+                  <Badge
+                    variant="secondary"
+                    className={`text-xs ${getStatusColor(account.status)}`}
+                  >
+                    {getStatusIcon(account.status)}
+                    <span className="ml-1 capitalize">{account.status}</span>
+                  </Badge>
                 </div>
               </div>
-              {account.institution && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  {account.institution}
-                </p>
-              )}
             </div>
+            {account.institution && (
+              <p className="text-xs text-muted-foreground">
+                {account.institution}
+              </p>
+            )}
 
             {/* Balance */}
-            <div className="px-6">
-              <div className="space-y-1">
-                <p className="text-2xl font-bold">
-                  {formatCurrency(account.balance, account.currency)}
-                </p>
-                <div className="flex items-center gap-2">
-                  {getTrendIcon(account.monthlyChange)}
-                  <span
-                    className={`text-sm ${getTrendColor(account.monthlyChange)}`}
-                  >
-                    {formatCurrency(Math.abs(account.monthlyChange))} (
-                    {formatPercentage(account.monthlyChangePercentage)})
-                  </span>
-                  <span className="text-xs text-muted-foreground">this month</span>
-                </div>
+            <div className="space-y-1">
+              <p className="text-2xl font-bold">
+                {formatCurrency(account.balance, account.currency)}
+              </p>
+              <div className="flex items-center gap-2">
+                {getTrendIcon(account.monthlyChange)}
+                <span
+                  className={`text-sm ${getTrendColor(account.monthlyChange)}`}
+                >
+                  {formatCurrency(Math.abs(account.monthlyChange))} (
+                  {formatPercentage(account.monthlyChangePercentage)})
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  this month
+                </span>
               </div>
             </div>
 
             {/* Mini Chart */}
-            <div className="px-6">
+            <div>
               <AccountMiniChart
                 data={account.trend}
                 color={account.color || "#0066CC"}
@@ -138,11 +136,9 @@ export function EnhancedAccountsGrid({ accounts }: EnhancedAccountsGridProps) {
             </div>
 
             {/* Transaction Activity */}
-            <div className="px-6">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{account.recentTransactionCount} transactions</span>
-                <span>last 6 months</span>
-              </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{account.recentTransactionCount} transactions</span>
+              <span>last 6 months</span>
             </div>
           </div>
         </Link>
@@ -150,7 +146,7 @@ export function EnhancedAccountsGrid({ accounts }: EnhancedAccountsGridProps) {
 
       {accounts.length === 0 && (
         <div className="col-span-full">
-          <div className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm">
+          <div className="border rounded-lg p-6">
             <div className="flex items-center justify-center py-8">
               <p className="text-muted-foreground">No accounts found</p>
             </div>
