@@ -42,7 +42,7 @@ export default [
     "description": "Learn how to get started with Badget, the powerful link management platform.",
     "publishedAt": "2024-01-15",
     "summary": "A comprehensive guide to setting up and using Badget for your link management needs.",
-    "author": "badget-team",
+    "author": "christerhagen",
     "tags": [
       "tutorial",
       "getting-started",
@@ -64,13 +64,14 @@ export default [
     "wordCount": 354,
     "slug": "getting-started",
     "authorData": {
-      "id": "badget-team",
-      "name": "Badget Team",
-      "defaultTitle": "Product Team",
-      "image": "/avatars/team.jpg",
-      "bio": "The official Badget team account. Building the future of link management with AI-powered insights.",
-      "twitter": "badgetapp",
-      "displayTitle": "Product Team"
+      "id": "christerhagen",
+      "name": "Christer Hagen",
+      "defaultTitle": "Founder & CEO",
+      "image": "/avatars/christer.jpg",
+      "bio": "Founder of Badget, passionate about building tools that help people manage their digital life more effectively.",
+      "twitter": "christerhagen",
+      "linkedin": "christerhagen",
+      "displayTitle": "Founder & CEO"
     }
   },
   {
