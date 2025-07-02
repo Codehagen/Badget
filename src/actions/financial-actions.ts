@@ -54,6 +54,7 @@ export type EnhancedAccount = {
   monthlyChangePercentage: number;
   recentTransactionCount: number;
   status: "healthy" | "attention" | "inactive";
+  isPlaidConnected: boolean;
 };
 
 /**
@@ -276,7 +277,7 @@ export async function getEnhancedAccounts(): Promise<EnhancedAccount[]> {
   const prisma = getPrismaClient();
 
   try {
-    // Get all accounts
+    // Get all accounts with Plaid connection info
     const accounts = await prisma.financialAccount.findMany({
       where: {
         familyId,
@@ -291,6 +292,11 @@ export async function getEnhancedAccounts(): Promise<EnhancedAccount[]> {
         institution: true,
         color: true,
         createdAt: true,
+        plaidAccounts: {
+          select: {
+            id: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "asc",
@@ -381,6 +387,7 @@ export async function getEnhancedAccounts(): Promise<EnhancedAccount[]> {
           monthlyChangePercentage,
           recentTransactionCount: recentTransactions.length,
           status,
+          isPlaidConnected: account.plaidAccounts.length > 0,
         };
       })
     );

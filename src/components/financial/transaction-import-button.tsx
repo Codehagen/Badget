@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Calendar, AlertCircle, CheckCircle } from "lucide-react";
-import { importTransactions, syncAccountBalances } from "@/actions/plaid-actions";
+import { Download, Calendar, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
+import { importTransactions, syncAccountBalances, removeAllPlaidData } from "@/actions/plaid-actions";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ export function TransactionImportButton({
 }: TransactionImportButtonProps) {
   const [isImporting, setIsImporting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const handleImportTransactions = async (days: number) => {
     try {
@@ -79,7 +80,35 @@ export function TransactionImportButton({
     }
   };
 
-  const isLoading = isImporting || isSyncing;
+  const handleRemoveAllPlaidData = async () => {
+    if (!confirm("Are you sure you want to remove ALL Plaid connections and data? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setIsRemoving(true);
+      
+      const response = await removeAllPlaidData();
+      
+      if (response.success) {
+        toast.success(response.message, {
+          icon: <CheckCircle className="h-4 w-4" />,
+        });
+        onSuccess?.();
+      } else {
+        throw new Error("Remove failed");
+      }
+    } catch (error) {
+      console.error("Error removing Plaid data:", error);
+      toast.error("Failed to remove Plaid data. Please try again.", {
+        icon: <AlertCircle className="h-4 w-4" />,
+      });
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
+  const isLoading = isImporting || isSyncing || isRemoving;
 
   return (
     <DropdownMenu>
@@ -132,6 +161,17 @@ export function TransactionImportButton({
         >
           <CheckCircle className="mr-2 h-4 w-4" />
           Sync Account Balances
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem 
+          onClick={handleRemoveAllPlaidData}
+          disabled={isLoading}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Remove All Plaid Data
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

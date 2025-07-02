@@ -67,15 +67,9 @@ export function EnhancedAccountsGrid({ accounts }: EnhancedAccountsGridProps) {
     return "text-muted-foreground";
   };
 
-  // Simulate connected status - in real implementation, this would come from the account data
+  // Check if account is connected via Plaid
   const isPlaidConnected = (account: EnhancedAccount) => {
-    // This would check if the account has a related plaidAccount record
-    // For now, we'll show as connected if it's from a major institution
-    const connectedInstitutions = ["chase", "bank of america", "wells fargo", "citi"];
-    return account.institution && 
-           connectedInstitutions.some(bank => 
-             account.institution?.toLowerCase().includes(bank)
-           );
+    return account.isPlaidConnected;
   };
 
   return (

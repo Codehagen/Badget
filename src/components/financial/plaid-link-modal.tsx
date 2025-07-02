@@ -88,7 +88,6 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
 
       if (response.success) {
         toast.success(response.message);
-        setIsOpen(false);
         setLinkToken(null); // Reset for next time
         onSuccess?.();
       } else {
@@ -97,6 +96,8 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
     } catch (err) {
       console.error("Error exchanging public token:", err);
       toast.error("Failed to connect accounts. Please try again.");
+      // Reopen modal on error so user can try again
+      setIsOpen(true);
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +114,12 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
 
   const handleConnectBank = () => {
     if (ready && linkToken) {
-      open();
+      // Close our modal first to prevent z-index issues
+      setIsOpen(false);
+      // Small delay to ensure modal is closed before opening Plaid
+      setTimeout(() => {
+        open();
+      }, 100);
     }
   };
 

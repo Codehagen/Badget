@@ -234,23 +234,25 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
 
       // Import transactions
       for (const transaction of transactions) {
-        // Find corresponding financial account
-        const plaidAccount = accounts.find(
-          (acc) => acc.account_id === transaction.account_id
-        );
-        if (!plaidAccount) continue;
-
-        const financialAccount = await prisma.financialAccount.findFirst({
+        // Find corresponding financial account using Plaid account mapping
+        const plaidAccountRecord = await prisma.plaidAccount.findFirst({
           where: {
-            familyId,
-            accountNumber: plaidAccount.mask
-              ? `****${plaidAccount.mask}`
-              : null,
-            name: plaidAccount.name,
+            plaidAccountId: transaction.account_id,
+            plaidItem: {
+              familyId,
+            },
+          },
+          include: {
+            financialAccount: true,
           },
         });
 
-        if (!financialAccount) continue;
+        if (!plaidAccountRecord?.financialAccount) {
+          console.warn(`No financial account found for Plaid account ${transaction.account_id}`);
+          continue;
+        }
+
+        const financialAccount = plaidAccountRecord.financialAccount;
 
         // Check if transaction already exists
         const existingTransaction = await prisma.transaction.findFirst({
@@ -333,18 +335,22 @@ export async function syncAccountBalances() {
       const accounts = accountsResponse.data.accounts;
 
       for (const account of accounts) {
-        // Find corresponding financial account
-        const financialAccount = await prisma.financialAccount.findFirst({
+        // Find corresponding financial account using Plaid account mapping
+        const plaidAccountRecord = await prisma.plaidAccount.findFirst({
           where: {
-            familyId,
-            accountNumber: account.mask ? `****${account.mask}` : null,
-            name: account.name,
+            plaidAccountId: account.account_id,
+            plaidItem: {
+              familyId,
+            },
+          },
+          include: {
+            financialAccount: true,
           },
         });
 
-        if (financialAccount) {
+        if (plaidAccountRecord?.financialAccount) {
           await prisma.financialAccount.update({
-            where: { id: financialAccount.id },
+            where: { id: plaidAccountRecord.financialAccount.id },
             data: {
               balance: account.balances.current || 0,
             },
@@ -362,6 +368,83 @@ export async function syncAccountBalances() {
   } catch (error) {
     console.error("Error syncing account balances:", error);
     throw new Error("Failed to sync account balances");
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/**
+ * Remove all Plaid connections and data for testing purposes
+ */
+export async function removeAllPlaidData() {
+  const familyId = await getActiveFamilyId();
+  if (!familyId) {
+    throw new Error("User not authenticated or no family found");
+  }
+
+  const prisma = getPrismaClient();
+
+  try {
+    // Get all Plaid items for this family
+    const plaidItems = await prisma.plaidItem.findMany({
+      where: { familyId },
+      include: {
+        financialAccounts: {
+          include: {
+            financialAccount: true,
+          },
+        },
+      },
+    });
+
+    let deletedAccounts = 0;
+    let deletedTransactions = 0;
+
+    // Delete financial accounts and their transactions
+    for (const plaidItem of plaidItems) {
+      for (const plaidAccount of plaidItem.financialAccounts) {
+        if (plaidAccount.financialAccount) {
+          // Delete transactions for this account
+          const transactionDeleteResult = await prisma.transaction.deleteMany({
+            where: {
+              accountId: plaidAccount.financialAccount.id,
+              familyId,
+            },
+          });
+          deletedTransactions += transactionDeleteResult.count;
+
+          // Delete the financial account
+          await prisma.financialAccount.delete({
+            where: { id: plaidAccount.financialAccount.id },
+          });
+          deletedAccounts++;
+        }
+      }
+    }
+
+    // Delete Plaid account mappings
+    await prisma.plaidAccount.deleteMany({
+      where: {
+        plaidItem: {
+          familyId,
+        },
+      },
+    });
+
+    // Delete Plaid items
+    await prisma.plaidItem.deleteMany({
+      where: { familyId },
+    });
+
+    return {
+      success: true,
+      deletedAccounts,
+      deletedTransactions,
+      message: `Removed ${deletedAccounts} accounts and ${deletedTransactions} transactions`,
+    };
+  } catch (error) {
+    console.error("Error removing Plaid data:", error);
+    throw new Error("Failed to remove Plaid data");
   } finally {
     await prisma.$disconnect();
   }
