@@ -10,11 +10,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, Code, Settings, HelpCircle, Book, Zap } from "lucide-react";
+import { Search, FileText, Code, Settings, HelpCircle, Book, Zap, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { HelpSearchDialog } from "@/components/help/help-search-dialog";
 import { useSearchShortcut } from "@/hooks/use-search-shortcut";
+import { getPopularArticles, getCategoryArticleCount } from "@/lib/help-utils";
 
 // Define help categories with icons and descriptions
 interface HelpCategory {
@@ -61,20 +62,11 @@ const HELP_CATEGORIES: HelpCategory[] = [
   },
 ];
 
-// Get article count for a category
-function getCategoryArticleCount(categoryTags: string[]) {
-  return allHelps.filter((article) => {
-    if (!article.tags) return false;
-    return article.tags.some((tag) => 
-      categoryTags.some((categoryTag) => 
-        tag.toLowerCase() === categoryTag.toLowerCase()
-      )
-    );
-  }).length;
-}
+// Functions moved to @/lib/help-utils for better organization
 
 export default function HelpPage() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const popularArticles = getPopularArticles();
 
   // Handle keyboard shortcuts
   useSearchShortcut({
@@ -84,24 +76,20 @@ export default function HelpPage() {
   return (
     <>
       <div className="container mx-auto px-6 py-12">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold tracking-tight mb-4">
-              Help Center
+            <h1 className="text-4xl font-bold tracking-tight mb-6">
+              👋 How can we help today?
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-              Find answers to common questions and learn how to get the most out
-              of Badget.
-            </p>
 
             {/* Search Bar */}
-            <div className="relative max-w-md mx-auto">
+            <div className="relative max-w-lg mx-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 type="search"
-                placeholder="Search documentation..."
-                className="pl-10 cursor-pointer"
+                placeholder="Search for articles..."
+                className="pl-10 cursor-pointer h-12 text-base"
                 readOnly
                 onClick={() => setIsSearchOpen(true)}
               />
@@ -113,10 +101,33 @@ export default function HelpPage() {
             </div>
           </div>
 
-        {/* Category Cards */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-semibold mb-8 text-center">Browse by Category</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+          {/* Popular Articles */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-semibold mb-6">Popular Articles</h2>
+            <div className="grid gap-1 md:grid-cols-2">
+              {popularArticles.map((article) => (
+                <Link 
+                  key={article.slug} 
+                  href={`/help/${article.slug}`}
+                  className="flex items-center justify-between p-4 rounded-lg hover:bg-muted/50 transition-colors group"
+                >
+                  <span className="text-foreground group-hover:text-primary transition-colors">
+                    {article.title}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </Link>
+              ))}
+            </div>
+          </section>
+
+                </div>
+        
+        {/* Wider layout for categories and actions */}
+        <div className="max-w-6xl mx-auto">
+          {/* Category Cards */}
+          <section className="mb-16">
+            <h2 className="text-2xl font-semibold mb-8 text-center">Browse by Category</h2>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {HELP_CATEGORIES.map((category) => {
               const Icon = category.icon;
               const articleCount = getCategoryArticleCount(category.tags);
@@ -209,14 +220,14 @@ export default function HelpPage() {
             </Link>
           </div>
         </section>
+        </div>
       </div>
-    </div>
 
-    {/* Search Dialog */}
-    <HelpSearchDialog 
-      open={isSearchOpen} 
-      onOpenChange={setIsSearchOpen} 
-    />
-  </>
+      {/* Search Dialog */}
+      <HelpSearchDialog 
+        open={isSearchOpen} 
+        onOpenChange={setIsSearchOpen} 
+      />
+    </>
   );
 }
