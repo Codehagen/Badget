@@ -6,7 +6,7 @@ import { Clock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { TableOfContents } from "@/components/table-of-contents";
+import { EnhancedTableOfContents } from "@/components/blog/enhanced-table-of-contents";
 import { mdxComponents } from "@/components/mdx/mdx-components";
 import BlurImage from "@/lib/blur-image";
 import { RelatedPosts } from "@/components/blog/related-posts";
@@ -154,10 +154,7 @@ export default async function BlogPost({
             <div className="lg:sticky lg:top-24">
               {/* Mobile Table of Contents */}
               <div className="lg:hidden mb-8 bg-muted/30 rounded-lg p-4 border border-border">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <span>On this page</span>
-                </h3>
-                <TableOfContents />
+                <EnhancedTableOfContents />
               </div>
 
               {/* Desktop Sidebar Content */}
@@ -202,10 +199,7 @@ export default async function BlogPost({
 
                 {/* Table of Contents */}
                 <div className="bg-muted/30 rounded-lg p-6 border border-border">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <span>On this page</span>
-                  </h3>
-                  <TableOfContents />
+                  <EnhancedTableOfContents />
                 </div>
               </div>
             </div>
