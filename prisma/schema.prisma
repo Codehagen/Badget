@@ -243,6 +243,7 @@ model Family {
   Goal             Goal[]
   InvestmentAsset  InvestmentAsset[]
   PlaidItem        PlaidItem[]
+  BankConnection   BankConnection[]
 
   @@map("families")
 }
@@ -342,6 +343,7 @@ model FinancialAccount {
   budgets                Budget[]
   transferToTransactions Transaction[] @relation("TransferTo")
   plaidAccounts          PlaidAccount[]
+  connectedAccounts      ConnectedAccount[]
 
   @@index([familyId])
   @@index([familyId, type])
@@ -521,9 +523,69 @@ model InvestmentAsset {
   @@map("investment_assets")
 }
 
-// ---------- PLAID INTEGRATION ----------
-// Models for storing Plaid connection data
+// ---------- BANK INTEGRATION ----------
+// Models for storing bank connection data from multiple providers
 
+enum BankProvider {
+  PLAID
+  GOCARDLESS
+}
+
+model BankConnection {
+  id          String      @id @default(cuid())
+  provider    BankProvider
+  accessToken String      @unique
+  itemId      String      // Plaid item_id or GoCardless requisition_id
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Institution information
+  institutionId   String?
+  institutionName String?
+  institutionLogo String?
+  institutionCountry String?
+
+  // Multi-tenant relationship
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  // Related financial accounts
+  connectedAccounts ConnectedAccount[]
+
+  @@unique([familyId, itemId, provider])
+  @@index([familyId])
+  @@index([provider])
+  @@map("bank_connections")
+}
+
+// Replaces both PlaidAccount and future GoCardlessAccount
+model ConnectedAccount {
+  id               String   @id @default(cuid())
+  providerAccountId String  // account_id from Plaid or GoCardless
+  financialAccountId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Provider-specific account data
+  accountName     String
+  accountType     String
+  accountSubtype  String?
+  mask            String?
+  iban            String? // For European accounts
+  
+  // Relationships
+  connectionId String
+  connection   BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  
+  financialAccount FinancialAccount? @relation(fields: [financialAccountId], references: [id])
+
+  @@unique([connectionId, providerAccountId])
+  @@index([connectionId])
+  @@index([financialAccountId])
+  @@map("connected_accounts")
+}
+
+// Keep legacy Plaid models for backward compatibility
 model PlaidItem {
   id          String   @id @default(cuid())
   accessToken String   @unique

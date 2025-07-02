@@ -19,45 +19,30 @@ import {
   CreditCard,
   Banknote,
   AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 import { createLinkToken, exchangePublicToken } from "@/actions/plaid-actions";
+import { createGoCardlessRequisition } from "@/actions/gocardless-actions";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { BANKS, searchBanks, COUNTRY_NAMES, PROVIDER_NAMES, type BankInfo } from "@/data/banks";
 
-interface PlaidLinkModalProps {
+interface BankConnectionModalProps {
   onSuccess?: () => void;
 }
 
-// Common banks for the search/browse interface
-const POPULAR_BANKS = [
-  { name: "Chase", icon: Building2, type: "Major Bank", region: "US" },
-  { name: "Bank of America", icon: Building2, type: "Major Bank", region: "US" },
-  { name: "Wells Fargo", icon: Building2, type: "Major Bank", region: "US" },
-  { name: "Citi", icon: Building2, type: "Major Bank", region: "US" },
-  { name: "Capital One", icon: CreditCard, type: "Credit Card", region: "US" },
-  { name: "American Express", icon: CreditCard, type: "Credit Card", region: "US" },
-  { name: "Discover", icon: CreditCard, type: "Credit Card", region: "US" },
-  { name: "US Bank", icon: Building2, type: "Major Bank", region: "US" },
-  { name: "PNC Bank", icon: Building2, type: "Regional Bank", region: "US" },
-  { name: "TD Bank", icon: Building2, type: "Regional Bank", region: "US/CA" },
-  { name: "Navy Federal", icon: Building2, type: "Credit Union", region: "US" },
-  { name: "Ally Bank", icon: Banknote, type: "Online Bank", region: "US" },
-];
-
-export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
+export function PlaidLinkModal({ onSuccess }: BankConnectionModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBank, setSelectedBank] = useState<string | null>(null);
+  const [selectedBank, setSelectedBank] = useState<BankInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Filter banks based on search query
-  const filteredBanks = POPULAR_BANKS.filter(
-    (bank) =>
-      bank.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bank.type.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredBanks = searchQuery 
+    ? searchBanks(searchQuery) 
+    : BANKS.slice(0, 12); // Show first 12 banks by default
 
   // Create link token when modal opens
   useEffect(() => {
@@ -113,24 +98,52 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
     },
   });
 
-  const handleBankSelect = (bankName: string) => {
-    setSelectedBank(bankName);
-    setSearchQuery(bankName);
+  const handleBankSelect = (bank: BankInfo) => {
+    setSelectedBank(bank);
+    setSearchQuery(bank.name);
   };
 
-  const handleConnectBank = () => {
+  const handleConnectBank = async () => {
     if (!selectedBank) {
       setError("Please select a bank first");
       return;
     }
 
-    if (ready && linkToken) {
-      // Close our modal first to prevent z-index issues
-      setIsOpen(false);
-      // Small delay to ensure modal is closed before opening Plaid
-      setTimeout(() => {
-        open();
-      }, 100);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Check if bank supports Plaid
+      if (selectedBank.providers.includes("PLAID")) {
+        if (ready && linkToken) {
+          // Close our modal first to prevent z-index issues
+          setIsOpen(false);
+          // Small delay to ensure modal is closed before opening Plaid
+          setTimeout(() => {
+            open();
+          }, 100);
+        } else {
+          throw new Error("Plaid connection not ready");
+        }
+      } 
+      // Check if bank supports GoCardless
+      else if (selectedBank.providers.includes("GOCARDLESS")) {
+        const result = await createGoCardlessRequisition(selectedBank);
+        if (result.success) {
+          // Redirect to GoCardless authorization
+          window.location.href = result.authUrl;
+        } else {
+          throw new Error("Failed to create GoCardless connection");
+        }
+      } else {
+        throw new Error("Bank provider not supported");
+      }
+    } catch (err) {
+      console.error("Error connecting bank:", err);
+      setError("Failed to connect bank. Please try again.");
+      toast.error("Failed to connect bank");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -196,40 +209,50 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
           {/* Selected Bank & Connect Button */}
           {selectedBank ? (
             <div className="flex flex-col items-center gap-4 p-6 bg-green-50 dark:bg-green-950/20 rounded-lg border-2 border-green-200 dark:border-green-800">
-              <div className="text-center">
-                <h3 className="font-semibold mb-2 text-green-900 dark:text-green-100">
-                  Ready to Connect: {selectedBank}
-                </h3>
-                <p className="text-sm text-green-700 dark:text-green-300 mb-4">
-                  Click below to securely connect your {selectedBank} account
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => {
-                    setSelectedBank(null);
-                    setSearchQuery("");
-                  }}
-                  variant="outline"
-                  size="lg"
-                >
-                  Choose Different Bank
-                </Button>
-                <Button
-                  onClick={handleConnectBank}
-                  disabled={!ready || isLoading || !linkToken}
-                  size="lg"
-                  className="min-w-[200px]"
-                >
-                  {isLoading ? (
-                    "Connecting..."
-                  ) : (
-                    <>
-                      <Building2 className="mr-2 h-4 w-4" />
-                      Connect {selectedBank}
-                    </>
-                  )}
-                </Button>
+                             <div className="text-center">
+                 <h3 className="font-semibold mb-2 text-green-900 dark:text-green-100">
+                   Ready to Connect: {selectedBank.displayName}
+                 </h3>
+                 <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+                   Click below to securely connect your {selectedBank.displayName} account
+                 </p>
+                 <div className="flex items-center justify-center gap-2 mb-2">
+                   <Badge variant="outline" className="text-xs">
+                     {COUNTRY_NAMES[selectedBank.country] || selectedBank.country}
+                   </Badge>
+                   {selectedBank.providers.map(provider => (
+                     <Badge key={provider} variant="secondary" className="text-xs">
+                       via {PROVIDER_NAMES[provider]}
+                     </Badge>
+                   ))}
+                 </div>
+               </div>
+               <div className="flex gap-2">
+                 <Button
+                   onClick={() => {
+                     setSelectedBank(null);
+                     setSearchQuery("");
+                   }}
+                   variant="outline"
+                   size="lg"
+                 >
+                   Choose Different Bank
+                 </Button>
+                 <Button
+                   onClick={handleConnectBank}
+                   disabled={isLoading}
+                   size="lg"
+                   className="min-w-[200px]"
+                 >
+                   {isLoading ? (
+                     "Connecting..."
+                   ) : (
+                     <>
+                       <Building2 className="mr-2 h-4 w-4" />
+                       Connect {selectedBank.displayName}
+                     </>
+                   )}
+                 </Button>
               </div>
             </div>
           ) : (
@@ -257,23 +280,33 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {filteredBanks.map((bank) => (
                 <button
-                  key={bank.name}
-                  onClick={() => handleBankSelect(bank.name)}
+                  key={bank.id}
+                  onClick={() => handleBankSelect(bank)}
                   className={`flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
-                    selectedBank === bank.name
+                    selectedBank?.id === bank.id
                       ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800"
                       : "hover:bg-muted/50"
                   }`}
                 >
                   {getBankIcon(bank.icon)}
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{bank.name}</div>
-                    <Badge
-                      variant={getBadgeVariant(bank.type) as any}
-                      className="text-xs"
-                    >
-                      {bank.type}
-                    </Badge>
+                    <div className="font-medium truncate">{bank.displayName}</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Badge
+                        variant={getBadgeVariant(bank.type) as any}
+                        className="text-xs"
+                      >
+                        {bank.type}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {bank.country}
+                      </Badge>
+                      {bank.providers.length > 1 && (
+                        <Badge variant="secondary" className="text-xs">
+                          Multi-provider
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </button>
               ))}
