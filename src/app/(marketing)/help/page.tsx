@@ -107,7 +107,7 @@ export default function HelpPage() {
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <kbd className="px-2 py-1 bg-muted border rounded text-xs text-muted-foreground">
-                  ⌘K
+                  ⌘H
                 </kbd>
               </div>
             </div>

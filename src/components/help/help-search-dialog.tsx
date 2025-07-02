@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Search, Clock, Calendar, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
@@ -114,7 +115,7 @@ export function HelpSearchDialog({ open, onOpenChange }: HelpSearchDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] p-0">
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] p-0">
         <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle className="flex items-center gap-2">
             <Search className="w-5 h-5" />
@@ -158,7 +159,7 @@ export function HelpSearchDialog({ open, onOpenChange }: HelpSearchDialogProps) 
               <div className="text-sm text-muted-foreground mb-4">
                 Found {results.length} result{results.length !== 1 ? "s" : ""}
               </div>
-                             <div className="space-y-3">
+                                            <div className="divide-y divide-border">
                  {results.map((result, index) => {
                    const article = result.item;
                    const isSelected = index === selectedIndex;
@@ -167,10 +168,10 @@ export function HelpSearchDialog({ open, onOpenChange }: HelpSearchDialogProps) 
                        key={article.slug}
                        href={`/help/${article.slug}`}
                        onClick={handleResultClick}
-                       className={`block p-4 rounded-lg border transition-all duration-200 group ${
+                       className={`block p-4 transition-all duration-200 group outline-none ${
                          isSelected 
-                           ? "border-primary bg-primary/5" 
-                           : "border-border hover:border-border/80 hover:bg-muted/30"
+                           ? "bg-accent text-accent-foreground ring-2 ring-ring" 
+                           : "hover:bg-accent hover:text-accent-foreground"
                        }`}
                      >
                       <div className="flex items-start justify-between gap-4">
@@ -249,7 +250,7 @@ export function HelpSearchDialog({ open, onOpenChange }: HelpSearchDialogProps) 
               </div>
             </div>
             <div>
-              Press <kbd className="px-2 py-1 bg-background border rounded text-xs">Ctrl K</kbd> to search
+              Press <kbd className="px-2 py-1 bg-background border rounded text-xs">Ctrl H</kbd> to search
             </div>
           </div>
         </div>

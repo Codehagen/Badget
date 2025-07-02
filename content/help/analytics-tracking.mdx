@@ -1,0 +1,227 @@
+---
+title: "Analytics and Tracking"
+description: "Understand your link performance with Badget's comprehensive analytics and tracking features."
+publishedAt: "2024-01-18"
+updatedAt: "2024-01-22"
+summary: "Learn how to track, analyze, and optimize your link performance with detailed analytics."
+tags: ["analytics", "tracking", "reporting", "data"]
+---
+
+# Analytics and Tracking
+
+Badget provides comprehensive analytics to help you understand your link performance and make data-driven decisions.
+
+## Dashboard Overview
+
+Your analytics dashboard provides a real-time view of:
+
+- **Total Clicks**: Overall click count across all links
+- **Unique Visitors**: Number of unique users who clicked your links
+- **Top Performing Links**: Your most successful links
+- **Geographic Distribution**: Where your clicks are coming from
+- **Traffic Sources**: Which platforms drive the most traffic
+
+## Link-Specific Analytics
+
+### Basic Metrics
+
+For each link, you can view:
+
+- **Click Count**: Total number of clicks
+- **Unique Clicks**: Clicks from unique visitors
+- **Click Rate**: Percentage of views that resulted in clicks
+- **Peak Hours**: When your links get the most clicks
+
+### Advanced Metrics
+
+#### Geographic Data
+
+- **Country Breakdown**: See which countries your traffic comes from
+- **City-Level Data**: Drill down to specific cities
+- **Regional Performance**: Compare performance across regions
+
+#### Device Information
+
+- **Device Types**: Desktop, mobile, tablet usage
+- **Operating Systems**: iOS, Android, Windows, macOS breakdown
+- **Browser Data**: Chrome, Safari, Firefox usage patterns
+
+#### Referrer Analysis
+
+- **Social Media**: Facebook, Twitter, LinkedIn, Instagram
+- **Search Engines**: Google, Bing, DuckDuckGo
+- **Direct Traffic**: Users typing your link directly
+- **Email Campaigns**: Track email marketing performance
+
+## Real-Time Tracking
+
+### Live Click Monitoring
+
+Watch clicks happen in real-time with:
+
+- **Live Feed**: See clicks as they happen
+- **Geographic Map**: Visual representation of global clicks
+- **Recent Activity**: Latest clicks with timestamp and location
+
+### Alerts and Notifications
+
+Set up alerts for:
+
+- **High Traffic**: When links exceed click thresholds
+- **Geographic Spikes**: Unusual activity from specific regions
+- **Time-Based Patterns**: Traffic during specific hours
+- **Performance Drops**: When click rates decline
+
+## Custom Tracking
+
+### UTM Parameters
+
+Automatically add UTM parameters to track:
+
+- **Campaign Source**: Where traffic originated
+- **Campaign Medium**: Type of marketing channel
+- **Campaign Name**: Specific campaign identifier
+- **Campaign Content**: Different versions of the same ad
+
+Example:
+```
+https://badget.app/link/example?utm_source=twitter&utm_medium=social&utm_campaign=launch
+```
+
+### Custom Tags
+
+Organize your links with custom tags:
+
+- **Project Tags**: Group links by project
+- **Team Tags**: Track team-specific performance
+- **Campaign Tags**: Monitor campaign effectiveness
+- **Content Tags**: Categorize by content type
+
+## API Analytics
+
+### Programmatic Access
+
+Access your analytics data via API:
+
+```bash
+# Get link analytics
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://api.badget.app/analytics/links/abc123?period=30d"
+
+# Get aggregate data
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://api.badget.app/analytics/summary?period=7d"
+```
+
+### Webhook Integration
+
+Get real-time notifications:
+
+```json
+{
+  "event": "link.clicked",
+  "data": {
+    "linkId": "abc123",
+    "timestamp": "2024-01-20T10:30:00Z",
+    "location": {
+      "country": "US",
+      "city": "San Francisco"
+    },
+    "device": {
+      "type": "mobile",
+      "os": "iOS"
+    },
+    "referrer": "twitter.com"
+  }
+}
+```
+
+## Reporting Features
+
+### Automated Reports
+
+Schedule regular reports:
+
+- **Daily Summaries**: Key metrics delivered daily
+- **Weekly Insights**: Comprehensive weekly analysis
+- **Monthly Reports**: Detailed monthly performance review
+- **Custom Frequency**: Set your own reporting schedule
+
+### Export Options
+
+Export your data in multiple formats:
+
+- **CSV Files**: Raw data for spreadsheet analysis
+- **PDF Reports**: Professional formatted reports
+- **JSON Data**: Structured data for custom analysis
+- **Excel Files**: Full-featured spreadsheet exports
+
+## Privacy and Compliance
+
+### Data Protection
+
+- **GDPR Compliant**: Full compliance with European regulations
+- **CCPA Compliant**: California privacy law compliance
+- **Data Retention**: Configurable data retention policies
+- **Anonymization**: Option to anonymize visitor data
+
+### User Privacy
+
+- **Do Not Track**: Respect browser DNT headers
+- **Cookie Consent**: Compliant cookie handling
+- **Data Minimization**: Collect only necessary data
+- **User Rights**: Support data deletion requests
+
+## Advanced Analytics
+
+### Conversion Tracking
+
+Track conversions beyond clicks:
+
+- **Goal Setting**: Define what counts as a conversion
+- **Funnel Analysis**: See where users drop off
+- **Attribution**: Understand the customer journey
+- **ROI Calculation**: Measure return on investment
+
+### A/B Testing
+
+Test different approaches:
+
+- **Link Variations**: Test different destinations
+- **Landing Pages**: Compare landing page performance
+- **Call-to-Action**: Test different CTA strategies
+- **Timing**: Optimize posting schedules
+
+## Best Practices
+
+### Setting Up Tracking
+
+1. **Define Goals**: Know what you want to measure
+2. **Use Consistent Tags**: Develop a tagging strategy
+3. **Set Baselines**: Establish performance benchmarks
+4. **Regular Reviews**: Schedule weekly analytics reviews
+
+### Analyzing Data
+
+1. **Look for Trends**: Identify patterns over time
+2. **Compare Periods**: Month-over-month, year-over-year
+3. **Segment Data**: Break down by traffic source, geography
+4. **Action Planning**: Turn insights into actionable steps
+
+## Troubleshooting
+
+### Common Issues
+
+- **Missing Data**: Check if tracking is properly enabled
+- **Duplicate Clicks**: Understanding unique vs. total clicks
+- **Geographic Accuracy**: Limitations of IP-based location
+- **Bot Traffic**: Filtering out automated clicks
+
+### Getting Help
+
+- **Support Documentation**: Comprehensive guides available
+- **Video Tutorials**: Step-by-step video instructions
+- **Live Chat**: Real-time support during business hours
+- **Community Forum**: Connect with other users
+
+Ready to dive deeper into your analytics? [Explore your dashboard](https://app.badget.app/analytics) now!

@@ -1,0 +1,93 @@
+---
+title: "Getting Started with Badget"
+description: "Learn how to get started with Badget and create your first shortened links."
+publishedAt: "2024-01-15"
+updatedAt: "2024-01-20"
+summary: "A comprehensive guide to help you get up and running with Badget quickly."
+tags: ["getting-started", "tutorial", "basics"]
+---
+
+# Getting Started with Badget
+
+Welcome to Badget! This guide will help you get up and running with our link management platform in just a few minutes.
+
+## What is Badget?
+
+Badget is a powerful link management platform that helps you create, track, and optimize your links. Whether you're a marketer, developer, or content creator, Badget provides the tools you need to manage your links effectively.
+
+## Creating Your Account
+
+1. **Sign Up**: Visit [badget.app](https://badget.app) and click "Sign Up"
+2. **Verify Email**: Check your email and click the verification link
+3. **Complete Setup**: Add your basic information and preferences
+
+## Creating Your First Link
+
+### Using the Dashboard
+
+1. Click the **"Create Link"** button on your dashboard
+2. Enter your destination URL
+3. Customize your short link (optional)
+4. Add tags and description for organization
+5. Click **"Create"** to generate your short link
+
+### Using the API
+
+For developers, you can create links programmatically:
+
+```bash
+curl -X POST https://api.badget.app/links \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "alias": "my-first-link"
+  }'
+```
+
+## Understanding Analytics
+
+Once you've created links, you can track their performance:
+
+- **Click Counts**: See how many times your links have been clicked
+- **Geographic Data**: Understand where your audience is located
+- **Referrer Sources**: Know where your traffic is coming from
+- **Device Information**: Learn about your audience's devices
+
+## Best Practices
+
+### Link Organization
+
+- **Use Tags**: Organize your links with relevant tags
+- **Descriptive Aliases**: Create memorable, branded short links
+- **Consistent Naming**: Develop a naming convention for your team
+
+### Security
+
+- **Custom Domains**: Use your own domain for better brand trust
+- **Access Control**: Manage team permissions appropriately
+- **Regular Reviews**: Audit your links periodically
+
+## Quick Tips
+
+1. **Bulk Operations**: Use our bulk import feature for multiple links
+2. **QR Codes**: Generate QR codes for offline campaigns
+3. **Expiration Dates**: Set expiration dates for time-sensitive campaigns
+4. **UTM Parameters**: Add tracking parameters automatically
+
+## Need Help?
+
+- **Documentation**: Browse our comprehensive [help center](/help)
+- **API Reference**: Check out our [API documentation](/help/api-reference)
+- **Support**: Contact our team at support@badget.app
+- **Community**: Join our Discord for community support
+
+## Next Steps
+
+Now that you've created your first link, explore these advanced features:
+
+- [Set up custom domains](/help/custom-domains) for branded links
+- [Learn about our API](/help/api-reference) for integrations
+- [Understand analytics](/help/analytics) to optimize your campaigns
+
+Ready to get started? [Create your first link](https://app.badget.app) today!

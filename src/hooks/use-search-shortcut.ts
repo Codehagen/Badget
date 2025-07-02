@@ -9,8 +9,8 @@ interface UseSearchShortcutProps {
 export function useSearchShortcut({ onOpenSearch }: UseSearchShortcutProps) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Check for Ctrl+K or Cmd+K
-      if ((event.ctrlKey || event.metaKey) && event.key === "k") {
+      // Check for Ctrl+H or Cmd+H
+      if ((event.ctrlKey || event.metaKey) && event.key === "h") {
         event.preventDefault();
         onOpenSearch();
       }
