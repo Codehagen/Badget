@@ -5,6 +5,7 @@ import readingTime from "reading-time";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
+import { getAuthorByKey } from "./src/data/authors";
 
 const blog = defineCollection({
   name: "blog",
@@ -16,9 +17,7 @@ const blog = defineCollection({
     publishedAt: z.string(),
     summary: z.string().optional(),
     image: z.string().optional(),
-    author: z.string().optional(),
-    authorImage: z.string().optional(),
-    authorUrl: z.string().optional(),
+    author: z.string().optional(), // Simple author key (e.g., "christerhagen")
     tags: z.array(z.string()).optional(),
     related: z.array(z.string()).optional(),
   }),
@@ -50,12 +49,25 @@ const blog = defineCollection({
 
     const readingTimeStats = readingTime(document.content);
 
+    // Resolve author information
+    let authorData = null;
+    if (document.author) {
+      const author = getAuthorByKey(document.author);
+      if (author) {
+        authorData = {
+          ...author,
+          displayTitle: author.defaultTitle,
+        };
+      }
+    }
+
     return {
       ...document,
       mdx,
       readingTime: readingTimeStats.text,
       wordCount: readingTimeStats.words,
       slug: document._meta.path,
+      authorData, // Resolved author information
     };
   },
 });

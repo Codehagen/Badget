@@ -10,10 +10,11 @@ import { TableOfContents } from "@/components/table-of-contents";
 import { mdxComponents } from "@/components/mdx/mdx-components";
 import BlurImage from "@/lib/blur-image";
 import { RelatedPosts } from "@/components/blog/related-posts";
-import { WasThisHelpful } from "@/components/blog/was-this-helpful";
+
+type BlogPost = (typeof allBlogs)[0];
 
 export async function generateStaticParams() {
-  return allBlogs.map((post: any) => ({
+  return allBlogs.map((post) => ({
     slug: post.slug,
   }));
 }
@@ -24,13 +25,16 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = allBlogs.find((post: any) => post.slug === slug);
+  const post = allBlogs.find((post) => post.slug === slug);
 
   if (!post) {
     return {
       title: "Post not found",
     };
   }
+
+  // Get author name for metadata
+  const authorName = post.authorData?.name || post.author;
 
   return {
     title: post.title,
@@ -40,7 +44,7 @@ export async function generateMetadata({
       description: post.description,
       type: "article",
       publishedTime: post.publishedAt,
-      authors: post.author ? [post.author] : undefined,
+      authors: authorName ? [authorName] : undefined,
       tags: post.tags,
     },
     twitter: {
@@ -57,11 +61,14 @@ export default async function BlogPost({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = allBlogs.find((post: any) => post.slug === slug);
+  const post = allBlogs.find((post) => post.slug === slug);
 
   if (!post) {
     notFound();
   }
+
+  // Author data is already resolved by content collections
+  const authorInfo = post.authorData;
 
   return (
     <div className="container mx-auto py-12">
@@ -132,11 +139,6 @@ export default async function BlogPost({
               <MDXContent code={post.mdx} components={mdxComponents} />
             </article>
 
-            {/* Was This Helpful Widget */}
-            {/* <div className="mt-12 mb-8">
-              <WasThisHelpful postSlug={post.slug} />
-            </div> */}
-
             {/* Related Posts */}
             <RelatedPosts
               currentSlug={post.slug}
@@ -161,31 +163,31 @@ export default async function BlogPost({
               {/* Desktop Sidebar Content */}
               <div className="hidden lg:block space-y-8 pt-8">
                 {/* Author Info */}
-                {post.author && (
+                {authorInfo && (
                   <div>
                     <h3 className="font-semibold mb-4 text-sm">Written by</h3>
                     <div className="flex items-start gap-3 mb-6">
                       <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                        {post.authorImage ? (
+                        {authorInfo.image ? (
                           <BlurImage
-                            src={post.authorImage}
-                            alt={post.author}
+                            src={authorInfo.image}
+                            alt={authorInfo.name}
                             fill
                             className="object-cover"
                             sizes="48px"
                           />
                         ) : (
                           <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
-                            {post.author.charAt(0).toUpperCase()}
+                            {authorInfo.name.charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
                       <div>
                         <div className="font-semibold text-foreground">
-                          {post.author}
+                          {authorInfo.name}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Content Marketer
+                          {authorInfo.displayTitle}
                         </div>
                       </div>
                     </div>
