@@ -1,0 +1,91 @@
+---
+title: "Getting Started with Badget"
+description: "Learn how to get started with Badget, the powerful link management platform."
+publishedAt: "2024-01-15"
+summary: "A comprehensive guide to setting up and using Badget for your link management needs."
+author: "christerhagen"
+tags: ["tutorial", "getting-started", "basics"]
+related: ["advanced-analytics"]
+---
+
+# Getting Started with Badget
+
+<Author 
+  name="Badget Team"
+  image="/avatars/team.jpg"
+  twitter="badgetapp"
+  bio="The official Badget team account. Building the future of link management with AI-powered insights."
+/>
+
+Welcome to Badget! This comprehensive guide will help you get up and running with our powerful link management platform.
+
+## What is Badget?
+
+Badget is a modern link management platform that helps you create, track, and optimize your links. Whether you're a marketer, developer, or content creator, Badget provides the tools you need to manage your links effectively.
+
+## Key Features
+
+- **Link Shortening**: Create short, memorable links
+- **Analytics**: Track clicks, geographic data, and more
+- **Custom Domains**: Use your own branded domains
+- **Team Collaboration**: Work together with your team
+- **API Access**: Integrate with your existing workflows
+
+## Getting Started
+
+### 1. Create an Account
+
+Sign up for a free account at [badget.app](https://badget.app). You can use your email address or sign in with your GitHub account.
+
+### 2. Create Your First Link
+
+Once you're logged in, you can create your first shortened link:
+
+```javascript
+// Using the Badget API
+const response = await fetch('https://api.badget.app/links', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    url: 'https://example.com',
+    alias: 'my-link',
+  }),
+});
+
+const link = await response.json();
+console.log(link.shortUrl);
+```
+
+### 3. Track Your Analytics
+
+Monitor your link performance with detailed analytics:
+
+- Click counts and trends
+- Geographic distribution
+- Referrer sources
+- Device and browser information
+
+## Best Practices
+
+1. **Use Descriptive Aliases**: Create memorable, descriptive aliases for your links
+2. **Monitor Performance**: Regularly check your analytics to understand user behavior
+3. **Organize with Tags**: Use tags to categorize and organize your links
+4. **Set Expiration Dates**: For time-sensitive campaigns, set appropriate expiration dates
+
+## Next Steps
+
+Now that you're familiar with the basics, explore these advanced features:
+
+- Set up custom domains for branded links
+- Create QR codes for offline campaigns
+- Use webhooks for real-time notifications
+- Integrate with your existing tools via our API
+
+## Need Help?
+
+If you have any questions or need assistance, check out our [help documentation](/help) or reach out to our support team.
+
+Happy linking! 🚀

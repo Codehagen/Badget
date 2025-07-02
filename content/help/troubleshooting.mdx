@@ -1,0 +1,312 @@
+---
+title: "Troubleshooting Common Issues"
+description: "Solutions to common problems and frequently asked questions about using Badget for financial management."
+publishedAt: "2024-01-25"
+updatedAt: "2024-01-28"
+summary: "Quick solutions and troubleshooting steps for the most common Badget financial management issues."
+tags: ["troubleshooting", "faq", "support", "issues"]
+---
+
+# Troubleshooting Common Issues
+
+This guide covers solutions to the most frequently encountered issues with Badget's financial management features.
+
+## Account Connection Issues
+
+### Bank Account Won't Connect
+
+**Problem**: Unable to link your bank account to Badget.
+
+**Solutions**:
+1. **Verify Credentials**: Ensure username and password are correct
+2. **Check Two-Factor Authentication**: Some banks require app-based authentication
+3. **Update Security Settings**: Temporarily disable security alerts if possible
+4. **Try Different Browser**: Some banks have browser compatibility issues
+5. **Contact Your Bank**: Verify third-party access is enabled
+
+**Common Bank Requirements**:
+- Online banking must be enabled
+- Account must be in good standing
+- Third-party access permissions enabled
+- Two-factor authentication configured
+
+### Account Connection Keeps Failing
+
+**Problem**: Connected accounts repeatedly lose connection.
+
+**Solutions**:
+1. **Update Login Credentials**: Change password at your bank and reconnect
+2. **Check Account Status**: Ensure account isn't frozen or restricted
+3. **Review Bank Security Settings**: Some banks block repeated API calls
+4. **Reconnect Manually**: Delete and re-add the account connection
+5. **Contact Support**: For persistent issues lasting more than 24 hours
+
+### Missing Transactions
+
+**Problem**: Some transactions aren't importing from connected accounts.
+
+**Solutions**:
+1. **Check Transaction Age**: Only recent transactions may import initially
+2. **Verify Account Types**: Some account types have import limitations
+3. **Review Transaction Types**: Pending transactions may not appear
+4. **Manual Refresh**: Force sync from account settings
+5. **Add Missing Transactions**: Enter manually if needed
+
+## Transaction Issues
+
+### Transactions Not Categorizing Correctly
+
+**Problem**: Automatic categorization is inaccurate.
+
+**Solutions**:
+1. **Train the System**: Manually categorize similar transactions
+2. **Create Rules**: Set up automatic rules for specific merchants
+3. **Review Merchant Names**: Some transactions have unclear descriptions
+4. **Split Transactions**: Divide mixed purchases across categories
+5. **Update Categories**: Customize categories to match your spending
+
+**Creating Categorization Rules**:
+```
+If merchant contains "Target" → Assign to "Shopping"
+If amount > $500 AND merchant = "Mortgage Co" → Assign to "Housing"
+If description contains "ATM" → Assign to "Cash & ATM"
+```
+
+### Duplicate Transactions Appearing
+
+**Problem**: Same transaction shows up multiple times.
+
+**Solutions**:
+1. **Check Multiple Accounts**: Transaction might appear on different accounts
+2. **Review Import Sources**: Manual entries vs. automatic imports
+3. **Use Merge Feature**: Combine duplicate transactions
+4. **Check Credit Card Payments**: Payment might show on both accounts
+5. **Set Up Duplicate Detection**: Enable automatic duplicate filtering
+
+### Transaction Amounts Incorrect
+
+**Problem**: Imported transaction amounts don't match bank statements.
+
+**Solutions**:
+1. **Check Currency Conversion**: Foreign transactions may have conversion differences
+2. **Review Pending vs. Posted**: Amounts may change between pending and final
+3. **Verify Account Balance**: Ensure overall balance matches
+4. **Check for Fees**: Additional fees might affect total amounts
+5. **Manual Correction**: Edit transaction amounts if needed
+
+## Budget Management Issues
+
+### Budget Not Tracking Correctly
+
+**Problem**: Budget categories showing incorrect spending amounts.
+
+**Solutions**:
+1. **Review Category Assignments**: Ensure transactions are categorized correctly
+2. **Check Date Ranges**: Verify budget period matches transaction dates
+3. **Include All Accounts**: Make sure all relevant accounts are included
+4. **Review Excluded Transactions**: Check if any transactions were excluded
+5. **Reset Budget**: Start fresh if data seems corrupted
+
+### Overspending Alerts Not Working
+
+**Problem**: Not receiving notifications when approaching budget limits.
+
+**Solutions**:
+1. **Check Notification Settings**: Verify alerts are enabled
+2. **Review Email Preferences**: Ensure emails aren't going to spam
+3. **Update Alert Thresholds**: Adjust warning percentages (80%, 90%, 100%)
+4. **Verify Account Settings**: Check that notifications are enabled for your account
+5. **Test with Small Budget**: Create test budget to verify alerts work
+
+### Budget Categories Don't Match Spending
+
+**Problem**: Pre-built categories don't fit your spending patterns.
+
+**Solutions**:
+1. **Customize Categories**: Add, remove, or rename categories
+2. **Create Subcategories**: Break down broad categories into specifics
+3. **Use Other/Miscellaneous**: Temporarily categorize unusual expenses
+4. **Review Spending History**: Analyze past spending to create better categories
+5. **Start Simple**: Begin with basic categories and refine over time
+
+## Investment and Asset Issues
+
+### Investment Values Not Updating
+
+**Problem**: Portfolio values aren't reflecting current market prices.
+
+**Solutions**:
+1. **Check Market Hours**: Prices update during trading hours only
+2. **Verify Ticker Symbols**: Ensure correct symbols are used
+3. **Manual Price Update**: Force refresh investment data
+4. **Review Data Sources**: Check if data provider is experiencing issues
+5. **Update Holdings**: Ensure share quantities are correct
+
+### Real Estate Values Seem Wrong
+
+**Problem**: Property values don't match expectations or recent assessments.
+
+**Solutions**:
+1. **Update Manual Values**: Real estate requires manual value updates
+2. **Check Assessment Dates**: Values may be from older assessments
+3. **Research Market Values**: Use recent comparable sales data
+4. **Review Property Details**: Ensure square footage and features are correct
+5. **Set Quarterly Updates**: Schedule regular property value reviews
+
+### Retirement Account Balances Incorrect
+
+**Problem**: 401(k) or IRA balances don't match provider statements.
+
+**Solutions**:
+1. **Check Last Update Date**: Some retirement accounts update less frequently
+2. **Review Contribution Timing**: Recent contributions may not appear immediately
+3. **Verify Account Numbers**: Ensure correct accounts are connected
+4. **Include All Holdings**: Check that all investments within account are tracked
+5. **Manual Entry**: Add retirement accounts manually if connection fails
+
+## Performance and Technical Issues
+
+### App Loading Slowly
+
+**Problem**: Badget dashboard takes too long to load.
+
+**Solutions**:
+1. **Check Internet Connection**: Verify stable internet connectivity
+2. **Clear Browser Cache**: Clear cached data and cookies
+3. **Reduce Data Range**: Limit dashboard to shorter time periods
+4. **Disable Extensions**: Browser extensions may cause conflicts
+5. **Update Browser**: Ensure you're using a supported browser version
+
+### Sync Issues Between Devices
+
+**Problem**: Data not syncing across mobile and web platforms.
+
+**Solutions**:
+1. **Force App Refresh**: Pull down to refresh on mobile apps
+2. **Log Out and Back In**: Reset your session on all devices
+3. **Check Internet Connection**: Ensure stable connection on all devices
+4. **Update Apps**: Ensure all apps are running latest versions
+5. **Clear App Cache**: Reset mobile app data if needed
+
+### Data Export Problems
+
+**Problem**: Unable to export financial data or reports.
+
+**Solutions**:
+1. **Check File Format**: Try different export formats (CSV, PDF, Excel)
+2. **Reduce Date Range**: Large datasets may timeout
+3. **Use Smaller Batches**: Export data in smaller chunks
+4. **Try Different Browser**: Export issues may be browser-specific
+5. **Contact Support**: For large data exports beyond normal limits
+
+## Security and Privacy Concerns
+
+### Suspicious Account Activity
+
+**Problem**: Unrecognized login attempts or account changes.
+
+**Immediate Actions**:
+1. **Change Password**: Update password immediately
+2. **Enable Two-Factor Authentication**: Add extra security layer
+3. **Review Recent Activity**: Check all recent logins and changes
+4. **Disconnect Accounts**: Temporarily disconnect bank connections
+5. **Contact Support**: Report security concerns immediately
+
+### Data Privacy Questions
+
+**Problem**: Concerns about how financial data is used and stored.
+
+**Understanding Our Security**:
+- **Bank-Level Encryption**: 256-bit encryption for all data
+- **Read-Only Access**: We never have write access to your accounts
+- **No Data Selling**: Your financial data is never sold or shared
+- **SOC 2 Compliance**: Regular third-party security audits
+- **Data Control**: You can export or delete your data anytime
+
+## Getting Help
+
+### Self-Service Options
+
+Before contacting support, try these resources:
+
+1. **Help Center Search**: Use the search function above
+2. **Video Tutorials**: Watch step-by-step guides
+3. **Community Forum**: Ask questions and see solutions from other users
+4. **Status Page**: Check if there are known system issues
+5. **Feature Updates**: Review recent app updates for changes
+
+### When to Contact Support
+
+Contact our support team for:
+- Account security concerns
+- Persistent technical issues
+- Billing and subscription questions
+- Feature requests or feedback
+- Data export assistance
+
+### How to Contact Support
+
+**Preparation Steps**:
+1. **Document the Issue**: Screenshot error messages
+2. **Note Steps to Reproduce**: List what you did before the problem
+3. **Gather Account Info**: Have your account email ready
+4. **Try Basic Troubleshooting**: Restart app, clear cache, try different browser
+
+**Contact Methods**:
+- **In-App Chat**: Available in the app during business hours
+- **Email Support**: support@badget.app (24-48 hour response)
+- **Help Desk**: Submit ticket through help center
+- **Phone Support**: Available for premium subscribers
+
+### Information to Include
+
+When contacting support, please provide:
+- Account email address
+- Device and browser information
+- Exact error messages
+- Screenshots of the issue
+- Steps you've already tried
+- Urgency level (low, medium, high)
+
+## Frequently Asked Questions
+
+### Is my financial data secure?
+
+Yes! Badget uses bank-level security including:
+- 256-bit encryption
+- Read-only account access
+- Regular security audits
+- SOC 2 Type II compliance
+
+### How often does account data update?
+
+- **Bank Accounts**: Daily (usually overnight)
+- **Credit Cards**: Daily
+- **Investment Accounts**: Daily during market hours
+- **Manual Accounts**: When you update them
+
+### Can I use Badget with international banks?
+
+Currently supported countries:
+- United States (all major banks)
+- Canada (major banks)
+- United Kingdom (coming soon)
+- Additional countries planned for 2024
+
+### What if my bank isn't supported?
+
+Options for unsupported banks:
+- Manual transaction entry
+- CSV import from bank exports
+- Integration requests (contact support)
+- Third-party import tools
+
+### Can I delete my data?
+
+Yes, you have full control over your data:
+- Export all data anytime
+- Delete specific accounts or transactions
+- Close account and delete all data
+- GDPR/CCPA compliance available
+
+Still having trouble? Our support team is here to help! [Contact us](/contact) with your specific issue.

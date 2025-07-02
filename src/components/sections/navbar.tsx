@@ -190,24 +190,34 @@ export function Navbar() {
                         className="p-2.5 border-b border-border last:border-b-0"
                         variants={drawerMenuVariants}
                       >
-                        <a
-                          href={item.href}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const element = document.getElementById(
-                              item.href.substring(1)
-                            );
-                            element?.scrollIntoView({ behavior: "smooth" });
-                            setIsDrawerOpen(false);
-                          }}
-                          className={`underline-offset-4 hover:text-primary/80 transition-colors ${
-                            activeSection === item.href.substring(1)
-                              ? "text-primary font-medium"
-                              : "text-primary/60"
-                          }`}
-                        >
-                          {item.name}
-                        </a>
+                        {item.href.startsWith("/") ? (
+                          <Link
+                            href={item.href}
+                            onClick={() => setIsDrawerOpen(false)}
+                            className="underline-offset-4 hover:text-primary/80 transition-colors text-primary/60"
+                          >
+                            {item.name}
+                          </Link>
+                        ) : (
+                          <a
+                            href={item.href}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const element = document.getElementById(
+                                item.href.substring(1)
+                              );
+                              element?.scrollIntoView({ behavior: "smooth" });
+                              setIsDrawerOpen(false);
+                            }}
+                            className={`underline-offset-4 hover:text-primary/80 transition-colors ${
+                              activeSection === item.href.substring(1)
+                                ? "text-primary font-medium"
+                                : "text-primary/60"
+                            }`}
+                          >
+                            {item.name}
+                          </a>
+                        )}
                       </motion.li>
                     ))}
                   </AnimatePresence>
