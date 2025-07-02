@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Twitter } from "lucide-react";
@@ -30,28 +32,24 @@ export function Author({ name, image, twitter, bio }: AuthorProps) {
           </div>
         )}
       </div>
-      
+
       <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-lg text-foreground mb-1">
-          {name}
-        </h3>
-        
+        <h3 className="font-semibold text-lg text-foreground mb-1">{name}</h3>
+
         {twitter && (
           <Link
-            href={`https://twitter.com/${twitter.replace('@', '')}`}
+            href={`https://twitter.com/${twitter.replace("@", "")}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors mb-2"
           >
             <Twitter className="w-4 h-4" />
-            <span>@{twitter.replace('@', '')}</span>
+            <span>@{twitter.replace("@", "")}</span>
           </Link>
         )}
-        
+
         {bio && (
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {bio}
-          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{bio}</p>
         )}
       </div>
     </div>

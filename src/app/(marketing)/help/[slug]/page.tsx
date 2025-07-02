@@ -1,4 +1,4 @@
-import { allHelps } from "../../../../.content-collections/generated";
+import { allHelps } from "content-collections";
 import { notFound } from "next/navigation";
 import { MDXContent } from "@content-collections/mdx/react";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +15,13 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}) {
   const article = allHelps.find((article: any) => article.slug === params.slug);
-  
+
   if (!article) {
     return {
       title: "Help article not found",
@@ -55,7 +59,10 @@ export default function HelpArticle({ params }: { params: { slug: string } }) {
         {/* Back Button */}
         <div className="mb-8">
           <Button variant="ghost" asChild className="p-0 h-auto">
-            <Link href="/help" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+            <Link
+              href="/help"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
               <ArrowLeft className="w-4 h-4" />
               Back to Help Center
             </Link>
@@ -71,14 +78,20 @@ export default function HelpArticle({ params }: { params: { slug: string } }) {
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
                   <time dateTime={article.publishedAt}>
-                    Published {formatDistanceToNow(new Date(article.publishedAt), { addSuffix: true })}
+                    Published{" "}
+                    {formatDistanceToNow(new Date(article.publishedAt), {
+                      addSuffix: true,
+                    })}
                   </time>
                 </div>
                 {article.updatedAt && (
                   <div className="flex items-center gap-1">
                     <Edit className="w-4 h-4" />
                     <time dateTime={article.updatedAt}>
-                      Updated {formatDistanceToNow(new Date(article.updatedAt), { addSuffix: true })}
+                      Updated{" "}
+                      {formatDistanceToNow(new Date(article.updatedAt), {
+                        addSuffix: true,
+                      })}
                     </time>
                   </div>
                 )}
@@ -108,7 +121,8 @@ export default function HelpArticle({ params }: { params: { slug: string } }) {
             </header>
 
             {/* Article Content */}
-            <article className="prose prose-gray dark:prose-invert max-w-none
+            <article
+              className="prose prose-gray dark:prose-invert max-w-none
                                prose-headings:font-bold prose-headings:tracking-tight
                                prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
                                prose-p:leading-relaxed prose-p:text-muted-foreground
@@ -123,7 +137,8 @@ export default function HelpArticle({ params }: { params: { slug: string } }) {
                                prose-th:bg-muted prose-th:font-semibold
                                prose-td:border-border prose-th:border-border
                                prose-li:text-muted-foreground
-                               prose-ul:text-muted-foreground prose-ol:text-muted-foreground">
+                               prose-ul:text-muted-foreground prose-ol:text-muted-foreground"
+            >
               <MDXContent code={article.mdx} components={mdxComponents} />
             </article>
           </div>
@@ -135,7 +150,7 @@ export default function HelpArticle({ params }: { params: { slug: string } }) {
               <div className="lg:hidden mb-8 bg-muted/30 rounded-lg p-4 border border-border">
                 <TableOfContents />
               </div>
-              
+
               {/* Desktop Table of Contents */}
               <div className="hidden lg:block bg-muted/30 rounded-lg p-6 border border-border">
                 <TableOfContents />
@@ -150,9 +165,11 @@ export default function HelpArticle({ params }: { params: { slug: string } }) {
             <h2 className="text-2xl font-bold mb-6">Related Documentation</h2>
             <div className="grid gap-6 md:grid-cols-2">
               {article.related.map((relatedSlug: string) => {
-                const relatedArticle = allHelps.find((a: any) => a.slug === relatedSlug);
+                const relatedArticle = allHelps.find(
+                  (a: any) => a.slug === relatedSlug
+                );
                 if (!relatedArticle) return null;
-                
+
                 return (
                   <Link
                     key={relatedSlug}
@@ -168,7 +185,11 @@ export default function HelpArticle({ params }: { params: { slug: string } }) {
                     {relatedArticle.tags && relatedArticle.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-3">
                         {relatedArticle.tags.slice(0, 3).map((tag: string) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
+                          <Badge
+                            key={tag}
+                            variant="outline"
+                            className="text-xs"
+                          >
                             {tag}
                           </Badge>
                         ))}
@@ -186,15 +207,12 @@ export default function HelpArticle({ params }: { params: { slug: string } }) {
           <div className="bg-muted/50 rounded-lg p-8 text-center">
             <h3 className="text-xl font-semibold mb-4">Was this helpful?</h3>
             <p className="text-muted-foreground mb-6">
-              Let us know if you found this documentation useful or if you need additional help.
+              Let us know if you found this documentation useful or if you need
+              additional help.
             </p>
             <div className="flex justify-center gap-4">
-              <Button variant="outline">
-                👍 Yes, helpful
-              </Button>
-              <Button variant="outline">
-                👎 Needs improvement
-              </Button>
+              <Button variant="outline">👍 Yes, helpful</Button>
+              <Button variant="outline">👎 Needs improvement</Button>
               <Button asChild>
                 <Link href="/contact">Contact Support</Link>
               </Button>
