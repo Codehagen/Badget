@@ -91,9 +91,11 @@ export default async function BlogPost({
           {/* Category and Date */}
           <div className="flex items-center gap-3 mb-6">
             {post.tags && post.tags.length > 0 && (
-              <Badge variant="secondary" className="px-3 py-1">
-                {post.tags[0]}
-              </Badge>
+              <Link href={`/blog/category/${post.tags[0].toLowerCase()}`}>
+                <Badge variant="secondary" className="px-3 py-1 hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
+                  {post.tags[0]}
+                </Badge>
+              </Link>
             )}
             <time
               dateTime={post.publishedAt}

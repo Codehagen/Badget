@@ -1,4 +1,5 @@
 import { allBlogs } from "content-collections";
+import { notFound } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -7,49 +8,118 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, User } from "lucide-react";
+import { Calendar, Clock, User, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import BlurImage from "@/lib/blur-image";
-import { StaticBlogCategoryFilter } from "@/components/blog/static-blog-category-filter";
+import { Button } from "@/components/ui/button";
 
-export const metadata = {
-  title: "Blog - Badget",
-  description: "Insights, tutorials, and updates from the Badget team. Learn how to optimize your link management strategy.",
-  openGraph: {
-    title: "Blog - Badget",
-    description: "Insights, tutorials, and updates from the Badget team. Learn how to optimize your link management strategy.",
-    type: "website",
-  },
-  twitter: {
-    card: "summary",
-    title: "Blog - Badget",
-    description: "Insights, tutorials, and updates from the Badget team. Learn how to optimize your link management strategy.",
-  },
-};
+// Get all unique categories from blog posts
+function getAllCategories() {
+  const categories = new Set<string>();
+  allBlogs.forEach((post) => {
+    if (post.tags) {
+      post.tags.forEach((tag) => categories.add(tag.toLowerCase()));
+    }
+  });
+  return Array.from(categories);
+}
 
-export default function BlogPage() {
-  // Sort blog posts by publishedAt date, newest first
-  const sortedPosts = allBlogs.sort(
+// Get posts by category
+function getPostsByCategory(category: string) {
+  return allBlogs.filter((post) => {
+    if (!post.tags) return false;
+    return post.tags.some((tag) => tag.toLowerCase() === category.toLowerCase());
+  });
+}
+
+export async function generateStaticParams() {
+  const categories = getAllCategories();
+  return categories.map((category) => ({
+    category: category,
+  }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}) {
+  const { category } = await params;
+  const categoryDisplay = category.charAt(0).toUpperCase() + category.slice(1);
+  const posts = getPostsByCategory(category);
+
+  if (posts.length === 0) {
+    return {
+      title: "Category not found",
+    };
+  }
+
+  return {
+    title: `${categoryDisplay} - Blog`,
+    description: `Browse all ${categoryDisplay.toLowerCase()} articles and tutorials from the Badget team.`,
+    openGraph: {
+      title: `${categoryDisplay} - Blog`,
+      description: `Browse all ${categoryDisplay.toLowerCase()} articles and tutorials from the Badget team.`,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: `${categoryDisplay} - Blog`,
+      description: `Browse all ${categoryDisplay.toLowerCase()} articles and tutorials from the Badget team.`,
+    },
+  };
+}
+
+export default async function CategoryPage({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}) {
+  const { category } = await params;
+  const posts = getPostsByCategory(category);
+
+  if (posts.length === 0) {
+    notFound();
+  }
+
+  // Sort posts by publishedAt date, newest first
+  const sortedPosts = posts.sort(
     (a, b) =>
       new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   );
 
+  const categoryDisplay = category.charAt(0).toUpperCase() + category.slice(1);
+
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">Blog</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Insights, tutorials, and updates from the Badget team. Learn how to
-            optimize your link management strategy.
-          </p>
+        {/* Back Button */}
+        <div className="mb-8">
+          <Button variant="ghost" asChild className="p-0 h-auto">
+            <Link
+              href="/blog"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Blog
+            </Link>
+          </Button>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex justify-center mb-12">
-          <StaticBlogCategoryFilter />
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold tracking-tight mb-4">
+            {categoryDisplay}
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Browse all {categoryDisplay.toLowerCase()} articles and tutorials from the Badget team.
+          </p>
+          <div className="mt-4">
+            <Badge variant="secondary" className="text-sm px-3 py-1">
+              {sortedPosts.length} {sortedPosts.length === 1 ? 'article' : 'articles'}
+            </Badge>
+          </div>
         </div>
 
         {/* Blog Posts Grid */}
@@ -108,14 +178,13 @@ export default function BlogPage() {
                     {post.tags && post.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-4">
                         {post.tags.slice(0, 3).map((tag) => (
-                          <Link key={tag} href={`/blog/category/${tag.toLowerCase()}`}>
-                            <Badge
-                              variant="secondary"
-                              className="text-xs px-2 py-0.5 hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
-                            >
-                              {tag}
-                            </Badge>
-                          </Link>
+                          <Badge
+                            key={tag}
+                            variant={tag.toLowerCase() === category.toLowerCase() ? "default" : "secondary"}
+                            className="text-xs px-2 py-0.5"
+                          >
+                            {tag}
+                          </Badge>
                         ))}
                         {post.tags.length > 3 && (
                           <Badge
@@ -141,13 +210,6 @@ export default function BlogPage() {
             </div>
           ))}
         </div>
-
-        {/* Total posts indicator */}
-        {sortedPosts.length > 0 && (
-          <div className="text-center mt-12 text-sm text-muted-foreground">
-            {sortedPosts.length} {sortedPosts.length === 1 ? 'post' : 'posts'} published
-          </div>
-        )}
       </div>
     </div>
   );
