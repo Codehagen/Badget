@@ -70,6 +70,7 @@
     "color-bits": "^1.1.0",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
+    "fuse.js": "^7.1.0",
     "gray-matter": "^4.0.3",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.479.0",

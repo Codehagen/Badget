@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { allHelps } from "content-collections";
 import {
   Card,
@@ -10,12 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Search, FileText, Code, Settings, HelpCircle, Book, Zap } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
-import { constructMetadata } from "@/lib/construct-metadata";
-
-export const metadata = constructMetadata({
-  title: "Help Center - Badget",
-  description: "Find answers to common questions and learn how to get the most out of Badget.",
-});
+import { HelpSearchDialog } from "@/components/help/help-search-dialog";
+import { useSearchShortcut } from "@/hooks/use-search-shortcut";
 
 // Define help categories with icons and descriptions
 interface HelpCategory {
@@ -75,29 +74,44 @@ function getCategoryArticleCount(categoryTags: string[]) {
 }
 
 export default function HelpPage() {
-  return (
-    <div className="container mx-auto px-6 py-12">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">
-            Help Center
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Find answers to common questions and learn how to get the most out
-            of Badget.
-          </p>
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-          {/* Search Bar */}
-          <div className="relative max-w-md mx-auto">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              type="search"
-              placeholder="Search documentation..."
-              className="pl-10"
-            />
+  // Handle keyboard shortcuts
+  useSearchShortcut({
+    onOpenSearch: () => setIsSearchOpen(true),
+  });
+
+  return (
+    <>
+      <div className="container mx-auto px-6 py-12">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold tracking-tight mb-4">
+              Help Center
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+              Find answers to common questions and learn how to get the most out
+              of Badget.
+            </p>
+
+            {/* Search Bar */}
+            <div className="relative max-w-md mx-auto">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                type="search"
+                placeholder="Search documentation..."
+                className="pl-10 cursor-pointer"
+                readOnly
+                onClick={() => setIsSearchOpen(true)}
+              />
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <kbd className="px-2 py-1 bg-muted border rounded text-xs text-muted-foreground">
+                  ⌘K
+                </kbd>
+              </div>
+            </div>
           </div>
-        </div>
 
         {/* Category Cards */}
         <section className="mb-16">
@@ -197,5 +211,12 @@ export default function HelpPage() {
         </section>
       </div>
     </div>
+
+    {/* Search Dialog */}
+    <HelpSearchDialog 
+      open={isSearchOpen} 
+      onOpenChange={setIsSearchOpen} 
+    />
+  </>
   );
 }
