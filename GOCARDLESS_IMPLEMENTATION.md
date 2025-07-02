@@ -2,53 +2,146 @@
 
 ## Overview
 
-This document outlines the implementation of GoCardless Bank Account Data API integration, following the official [GoCardless API documentation](https://developer.gocardless.com/bank-account-data/quick-start-guide) and [API reference](https://bankaccountdata.gocardless.com/api/docs).
+This document outlines the implementation of GoCardless Bank Account Data API integration using **direct HTTP API calls** following the official [GoCardless API documentation](https://developer.gocardless.com/bank-account-data/quick-start-guide) and [API reference](https://bankaccountdata.gocardless.com/api/docs).
 
-## Updated Implementation Features
+## ✅ Direct HTTP API Implementation
 
-### 1. Official API Flow Compliance
+### Why Direct HTTP Instead of SDK?
 
-The implementation now follows the exact 6-step process outlined in the GoCardless documentation:
+We've moved from the `nordigen-node` SDK to direct HTTP API calls for several key reasons:
 
-1. **Get Access Token** - Generate JWT tokens for API authentication
-2. **Choose a Bank** - Select from 2,500+ European banks
-3. **Create End User Agreement** - Define access scope and duration
-4. **Build a Link** - Create requisition for bank connection
-5. **List Accounts** - Retrieve connected account IDs
-6. **Access Account Data** - Fetch details, balances, and transactions
+1. **Official Documentation Alignment**: Direct API calls match exactly what's shown in GoCardless documentation
+2. **Better Control**: Full control over request/response handling and error management
+3. **TypeScript Safety**: Custom TypeScript interfaces for all API responses
+4. **Reduced Dependencies**: No third-party SDK dependencies to maintain
+5. **Latest Features**: Always access to the newest API features without waiting for SDK updates
 
-### 2. Enhanced Token Management
+### Implementation Features
+
+#### 1. Official 6-Step API Flow
+
+The implementation follows the exact process from GoCardless documentation:
 
 ```typescript
-async function generateAccessToken() {
-  const tokenData = await nordigenClient.generateToken();
-  return tokenData.access;
+// Step 1: Get Access Token
+const accessToken = await generateAccessToken();
+
+// Step 2: Choose a Bank (handled by bank selection UI)
+
+// Step 3: Create End User Agreement
+const agreement = await createEndUserAgreement(institutionId, accessToken);
+
+// Step 4: Build a Link (Create Requisition)
+const requisition = await createRequisition(params);
+
+// Step 5: List Accounts (after user authorization)
+const accounts = await getRequisitionAccounts(requisitionId);
+
+// Step 6: Access Account Data
+const details = await getAccountDetails(accountId, accessToken);
+const balances = await getAccountBalances(accountId, accessToken);
+const transactions = await getAccountTransactions(accountId, accessToken);
+```
+
+#### 2. Direct API Endpoints
+
+All API calls use the official GoCardless endpoints:
+
+```typescript
+const GOCARDLESS_API_BASE = "https://bankaccountdata.gocardless.com/api/v2";
+
+// Authentication
+POST /token/new/
+
+// Institution Management  
+GET /institutions/?country={country}
+
+// Agreement Management
+POST /agreements/enduser/
+
+// Requisition Management
+POST /requisitions/
+GET /requisitions/{id}/
+
+// Account Data Access
+GET /accounts/{id}/details/
+GET /accounts/{id}/balances/
+GET /accounts/{id}/transactions/
+```
+
+#### 3. TypeScript Type Safety
+
+Complete TypeScript interfaces for all API responses:
+
+```typescript
+interface TokenResponse {
+  access: string;
+  access_expires: number;
+  refresh: string;
+  refresh_expires: number;
+}
+
+interface Institution {
+  id: string;
+  name: string;
+  bic: string;
+  transaction_total_days: string;
+  countries: string[];
+  logo: string;
+  max_access_valid_for_days: string;
+}
+
+interface AccountDetails {
+  resourceId: string;
+  iban?: string;
+  bban?: string;
+  currency: string;
+  name?: string;
+  displayName?: string;
+  product?: string;
+  cashAccountType?: string;
+  usage?: string;
+  ownerName?: string;
+}
+
+interface Transaction {
+  transactionId: string;
+  debtorName?: string;
+  creditorName?: string;
+  transactionAmount: {
+    amount: string;
+    currency: string;
+  };
+  bookingDate?: string;
+  valueDate?: string;
+  remittanceInformationUnstructured?: string;
+  bankTransactionCode?: string;
+  // ... and many more fields
 }
 ```
 
-- Proper JWT token generation before each API call
-- Fresh tokens for reliable API access
-- Error handling for token generation failures
+#### 4. Enhanced Error Handling
 
-### 3. End User Agreements
+Comprehensive error handling with detailed feedback:
 
 ```typescript
-const agreement = await nordigenClient.agreement.createEuaAgreement({
-  institutionId: bank.institutionId.gocardless,
-  maxHistoricalDays: 90, // 90 days of transaction history
-  accessValidForDays: 90, // 90 days of account access
-  accessScope: ["balances", "details", "transactions"]
-});
+if (!response.ok) {
+  const errorText = await response.text();
+  throw new Error(`Token generation failed: ${response.status} ${errorText}`);
+}
 ```
 
-- Configurable access periods and scope
-- Compliant with PSD2 regulations
-- Better user consent management
+- HTTP status code checking
+- Detailed error messages from API
+- Proper error propagation
+- Account-level error isolation
 
-### 4. Improved Account Type Mapping
+#### 5. Advanced Account Type Mapping
+
+European banking standard account type mapping:
 
 ```typescript
-const getAccountType = (details: any): AccountType => {
+const getAccountType = (details: AccountDetails): AccountType => {
   const usage = details.usage?.toLowerCase();
   const product = details.product?.toLowerCase();
   const cashAccountType = details.cashAccountType?.toLowerCase();
@@ -61,82 +154,105 @@ const getAccountType = (details: any): AccountType => {
     return AccountType.SAVINGS;
   } else if (product?.includes("credit") || cashAccountType === "card") {
     return AccountType.CREDIT_CARD;
-  } else if (product?.includes("loan")) {
-    return AccountType.LOAN;
-  } else if (product?.includes("investment")) {
-    return AccountType.INVESTMENT;
   }
-  return AccountType.OTHER;
+  // ... more mappings
 };
 ```
 
-- Maps European account types (CACC, SVGS, etc.)
-- Handles business vs personal accounts
-- Supports IBAN and BBAN account formats
+#### 6. Intelligent Balance Processing
 
-### 5. Advanced Balance Handling
+Prioritizes the most accurate balance type:
 
 ```typescript
 // Prefer interimAvailable balance, then closingBooked
-const availableBalance = balances.find((b: any) => b.balanceType === "interimAvailable");
-const currentBalance = availableBalance || balances.find((b: any) => b.balanceType === "closingBooked") || balances[0];
+const availableBalance = balances.find((b: Balance) => b.balanceType === "interimAvailable");
+const currentBalance = availableBalance || balances.find((b: Balance) => b.balanceType === "closingBooked") || balances[0];
 ```
 
-- Prioritizes real-time available balance
-- Falls back to closing balance if needed
-- Handles multiple balance types per account
+#### 7. Rich Transaction Processing
 
-### 6. Enhanced Transaction Processing
+Handles both booked and pending transactions with full metadata:
 
 ```typescript
-// Process both booked and pending transactions
-const bookedTransactions = transactionData.transactions?.booked || [];
-const pendingTransactions = transactionData.transactions?.pending || [];
-
 // Process booked transactions
 for (const transaction of bookedTransactions) {
   await processGoCardlessTransaction(transaction, connectedAccount, familyId, false, prisma);
 }
 
-// Process pending transactions
+// Process pending transactions  
 for (const transaction of pendingTransactions) {
   await processGoCardlessTransaction(transaction, connectedAccount, familyId, true, prisma);
 }
 ```
 
-- Separates booked vs pending transactions
-- Rich transaction metadata extraction
-- IBAN and counterparty information storage
+## API Request Examples
 
-### 7. Comprehensive Error Handling
+### 1. Generate Access Token
 
 ```typescript
-throw new Error(`Failed to create bank connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
+const response = await fetch(`${GOCARDLESS_API_BASE}/token/new/`, {
+  method: "POST",
+  headers: {
+    "accept": "application/json",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    secret_id: process.env.GOCARDLESS_SECRET_ID!,
+    secret_key: process.env.GOCARDLESS_SECRET_KEY!,
+  }),
+});
 ```
 
-- Detailed error messages for debugging
-- Graceful handling of individual account failures
-- Continuation of processing when some accounts fail
+### 2. Get Institutions by Country
 
-## API Endpoints Used
+```typescript
+const response = await fetch(`${GOCARDLESS_API_BASE}/institutions/?country=NO`, {
+  method: "GET",
+  headers: {
+    "accept": "application/json",
+    "Authorization": `Bearer ${accessToken}`,
+  },
+});
+```
 
-### Authentication
-- `POST /api/v2/token/new/` - Generate access tokens
+### 3. Create End User Agreement
 
-### Institution Management
-- `GET /api/v2/institutions/?country={country}` - List banks by country
+```typescript
+const response = await fetch(`${GOCARDLESS_API_BASE}/agreements/enduser/`, {
+  method: "POST",
+  headers: {
+    "accept": "application/json",
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${accessToken}`,
+  },
+  body: JSON.stringify({
+    institution_id: institutionId,
+    max_historical_days: 90,
+    access_valid_for_days: 90,
+    access_scope: ["balances", "details", "transactions"],
+  }),
+});
+```
 
-### Agreement Management
-- `POST /api/v2/agreements/enduser/` - Create end user agreements
+### 4. Create Requisition
 
-### Requisition Management
-- `POST /api/v2/requisitions/` - Create bank connection requisitions
-- `GET /api/v2/requisitions/{id}/` - Get requisition status and accounts
-
-### Account Data Access
-- `GET /api/v2/accounts/{id}/details/` - Get account details
-- `GET /api/v2/accounts/{id}/balances/` - Get account balances
-- `GET /api/v2/accounts/{id}/transactions/` - Get transaction history
+```typescript
+const response = await fetch(`${GOCARDLESS_API_BASE}/requisitions/`, {
+  method: "POST",
+  headers: {
+    "accept": "application/json",
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${accessToken}`,
+  },
+  body: JSON.stringify({
+    redirect: redirectUrl,
+    institution_id: institutionId,
+    agreement: agreementId,
+    reference: `family-${familyId}-${Date.now()}`,
+    user_language: "EN",
+  }),
+});
+```
 
 ## Environment Configuration
 
@@ -154,79 +270,108 @@ Get these from the [GoCardless Bank Account Data portal](https://bankaccountdata
 The implementation supports 2,500+ banks across 31 European countries including:
 
 ### Norwegian Banks (with BankID support)
-- DNB Bank
-- Nordea Norge
-- SpareBank 1
-- Handelsbanken Norge
+- DNB Bank (`DNB_DNBANO22`)
+- Nordea Norge (`NORDEA_NDEANO22`)
+- SpareBank 1 (`SPAREBANK1_SPBANO22`)
+- Handelsbanken Norge (`HANDELSBANKEN_HANONO22`)
 
 ### Other European Banks
-- Revolut (multi-country)
-- ING (Netherlands, Germany)
-- Santander (Spain, UK)
-- Deutsche Bank (Germany)
-- BNP Paribas (France)
+- Revolut (`REVOLUT_REVOGB21`) - Multi-country
+- ING Netherlands (`ING_INGBNL2A`)
+- Deutsche Bank (`DEUTSCHE_BANK_DEUTDEFF`)
+- BNP Paribas (`BNP_PARIBAS_BNPAFRPP`)
 
-## Data Structure
+## Data Structures
 
-### Transaction Data
-GoCardless provides rich European transaction data:
+### Transaction Data Response
 
-```typescript
+```json
 {
-  transactionId: "2020103000624289-1",
-  debtorName: "John Doe",
-  creditorName: "Merchant Name",
-  debtorAccount: { iban: "NO9386011117947" },
-  creditorAccount: { iban: "NO1234567890123" },
-  transactionAmount: { currency: "NOK", amount: "123.45" },
-  bookingDate: "2023-12-01",
-  valueDate: "2023-12-01",
-  remittanceInformationUnstructured: "Payment description",
-  bankTransactionCode: "PMNT"
+  "transactions": {
+    "booked": [
+      {
+        "transactionId": "2020103000624289-1",
+        "debtorName": "John Doe",
+        "creditorName": "Merchant Name",
+        "debtorAccount": { "iban": "NO9386011117947" },
+        "creditorAccount": { "iban": "NO1234567890123" },
+        "transactionAmount": { "currency": "NOK", "amount": "123.45" },
+        "bookingDate": "2023-12-01",
+        "valueDate": "2023-12-01",
+        "remittanceInformationUnstructured": "Payment description",
+        "bankTransactionCode": "PMNT"
+      }
+    ],
+    "pending": [
+      {
+        "transactionAmount": { "currency": "NOK", "amount": "-10.00" },
+        "valueDate": "2023-12-03",
+        "remittanceInformationUnstructured": "Pending payment"
+      }
+    ]
+  }
 }
 ```
 
-### Account Data
-European-standard account information:
+### Account Details Response
 
-```typescript
+```json
 {
-  iban: "NO9386011117947",
-  bban: "86011117947",
-  name: "Main Account",
-  product: "Current Account",
-  cashAccountType: "CACC", // Current Account
-  usage: "PRIV", // Private use
-  ownerName: "John Doe"
+  "account": {
+    "resourceId": "account-id-123",
+    "iban": "NO9386011117947",
+    "bban": "86011117947",
+    "currency": "NOK",
+    "name": "Main Account",
+    "displayName": "John Doe - Main Account",
+    "product": "Current Account",
+    "cashAccountType": "CACC",
+    "usage": "PRIV",
+    "ownerName": "John Doe"
+  }
 }
 ```
 
-### Balance Data
-Multiple balance types:
+### Balance Data Response
 
-```typescript
+```json
 {
-  balances: [
+  "balances": [
     {
-      balanceAmount: { currency: "NOK", amount: "1234.56" },
-      balanceType: "interimAvailable", // Real-time available
-      referenceDate: "2023-12-01"
+      "balanceAmount": { "currency": "NOK", "amount": "1234.56" },
+      "balanceType": "interimAvailable",
+      "referenceDate": "2023-12-01"
     },
     {
-      balanceAmount: { currency: "NOK", amount: "1200.00" },
-      balanceType: "closingBooked", // End of day balance
-      referenceDate: "2023-11-30"
+      "balanceAmount": { "currency": "NOK", "amount": "1200.00" },
+      "balanceType": "closingBooked",
+      "referenceDate": "2023-11-30"
     }
   ]
 }
 ```
 
-## Rate Limiting
+## Error Handling
+
+### API Error Response Format
+
+```json
+{
+  "summary": "Rate limit exceeded",
+  "detail": "The rate limit for this resource is 4/day. Please try again in 3600 seconds",
+  "status_code": 429
+}
+```
+
+### Rate Limiting
 
 GoCardless implements bank-specific rate limits:
 - Minimum 4 API calls per day per account
 - Separate limits for details, balances, and transactions
-- Rate limit headers provided in responses
+- Rate limit headers provided in responses:
+  - `HTTP_X_RATELIMIT_LIMIT`
+  - `HTTP_X_RATELIMIT_REMAINING`
+  - `HTTP_X_RATELIMIT_RESET`
 
 ## Testing
 
@@ -237,30 +382,39 @@ Use the sandbox institution for testing:
 
 ## Migration Notes
 
-### From Previous Implementation
-- Token management now follows official patterns
-- End user agreements are properly created
-- Balance handling improved for European standards
-- Transaction processing enhanced for booked/pending separation
-- Error handling provides more detailed feedback
+### From nordigen-node SDK to Direct HTTP
+
+**Benefits of Migration:**
+- ✅ Exact alignment with official API documentation
+- ✅ Better TypeScript type safety
+- ✅ Reduced dependency footprint
+- ✅ More granular error handling
+- ✅ Direct access to latest API features
+
+**Breaking Changes:**
+- Removed `nordigen-node` dependency
+- All API calls now use native `fetch()`
+- Custom TypeScript interfaces replace SDK types
+- Error handling now uses HTTP response codes directly
 
 ### Database Compatibility
-- Existing database schema remains compatible
-- GoCardless data stored in unified BankConnection/ConnectedAccount models
-- Transaction data enriched with European-specific fields
+- ✅ Existing database schema remains compatible
+- ✅ GoCardless data stored in unified BankConnection/ConnectedAccount models
+- ✅ Transaction data enriched with European-specific fields
 
 ## Next Steps
 
-1. **Enhanced Error Recovery**: Implement retry logic for rate-limited requests
-2. **Webhook Integration**: Add support for GoCardless webhooks for real-time updates
-3. **Premium Features**: Integrate GoCardless premium transaction categorization
+1. **Webhook Integration**: Add support for GoCardless webhooks for real-time updates
+2. **Premium Features**: Integrate GoCardless premium transaction categorization
+3. **Enhanced Retry Logic**: Implement intelligent retry for rate-limited requests
 4. **Multi-Language Support**: Add support for additional European languages
-5. **Compliance Features**: Add PSD2 compliance reporting and audit trails
+5. **Compliance Dashboard**: Add PSD2 compliance reporting and audit trails
 
 ## Resources
 
 - [GoCardless Bank Account Data Documentation](https://developer.gocardless.com/bank-account-data/overview)
 - [API Quick Start Guide](https://developer.gocardless.com/bank-account-data/quick-start-guide)
 - [API Reference](https://bankaccountdata.gocardless.com/api/docs)
+- [Swagger JSON Specification](https://bankaccountdata.gocardless.com/api/v2/swagger.json)
 - [Bank Coverage](https://gocardless.com/bank-account-data/coverage/)
-- [Nordigen Node.js SDK](https://github.com/nordigen/nordigen-node)
+- [GoCardless Bank Account Data Portal](https://bankaccountdata.gocardless.com/)

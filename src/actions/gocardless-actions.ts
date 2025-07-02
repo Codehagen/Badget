@@ -1,15 +1,119 @@
 "use server";
 
-const NordigenClient = require("nordigen-node");
 import { PrismaClient, AccountType } from "@/generated/prisma";
 import { getCurrentAppUser } from "./user-actions";
 import type { BankInfo } from "@/data/banks";
 
-// Initialize GoCardless client
-const nordigenClient = new NordigenClient({
-  secretId: process.env.GOCARDLESS_SECRET_ID!,
-  secretKey: process.env.GOCARDLESS_SECRET_KEY!,
-});
+// GoCardless Bank Account Data API base URL
+const GOCARDLESS_API_BASE = "https://bankaccountdata.gocardless.com/api/v2";
+
+// Types for GoCardless API responses
+interface TokenResponse {
+  access: string;
+  access_expires: number;
+  refresh: string;
+  refresh_expires: number;
+}
+
+interface Institution {
+  id: string;
+  name: string;
+  bic: string;
+  transaction_total_days: string;
+  countries: string[];
+  logo: string;
+  max_access_valid_for_days: string;
+}
+
+interface Agreement {
+  id: string;
+  created: string;
+  max_historical_days: number;
+  access_valid_for_days: number;
+  access_scope: string[];
+  accepted: string;
+  institution_id: string;
+}
+
+interface Requisition {
+  id: string;
+  created: string;
+  redirect: string;
+  status: string;
+  institution_id: string;
+  agreement: string;
+  reference: string;
+  accounts: string[];
+  user_language: string;
+  link: string;
+  ssn?: string;
+  account_selection: boolean;
+  redirect_immediate: boolean;
+}
+
+interface AccountDetails {
+  resourceId: string;
+  iban?: string;
+  bban?: string;
+  msisdn?: string;
+  currency: string;
+  name?: string;
+  displayName?: string;
+  product?: string;
+  cashAccountType?: string;
+  status?: string;
+  bic?: string;
+  linkedAccounts?: string;
+  usage?: string;
+  details?: string;
+  ownerName?: string;
+  ownerAddressStructured?: any;
+  ownerAddressUnstructured?: string;
+}
+
+interface Balance {
+  balanceAmount: {
+    amount: string;
+    currency: string;
+  };
+  balanceType: string;
+  referenceDate?: string;
+  lastChangeDateTime?: string;
+}
+
+interface Transaction {
+  transactionId: string;
+  debtorName?: string;
+  debtorAccount?: {
+    iban?: string;
+    bban?: string;
+  };
+  creditorName?: string;
+  creditorAccount?: {
+    iban?: string;
+    bban?: string;
+  };
+  transactionAmount: {
+    amount: string;
+    currency: string;
+  };
+  bookingDate?: string;
+  valueDate?: string;
+  remittanceInformationUnstructured?: string;
+  remittanceInformationStructured?: string;
+  additionalInformation?: string;
+  bankTransactionCode?: string;
+  proprietaryBankTransactionCode?: string;
+  endToEndId?: string;
+  mandateId?: string;
+  checkId?: string;
+  creditorId?: string;
+  ultimateCreditor?: string;
+  ultimateDebtor?: string;
+  purposeCode?: string;
+  exchangeRate?: any[];
+  currencyExchange?: any[];
+}
 
 function getPrismaClient() {
   return new PrismaClient();
@@ -21,21 +125,98 @@ async function getActiveFamilyId(): Promise<string | null> {
 }
 
 /**
- * Generate access token for GoCardless API
+ * Generate access token for GoCardless API (Step 1)
  */
-async function generateAccessToken() {
+async function generateAccessToken(): Promise<string> {
   try {
-    const tokenData = await nordigenClient.generateToken();
+    const response = await fetch(`${GOCARDLESS_API_BASE}/token/new/`, {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        secret_id: process.env.GOCARDLESS_SECRET_ID!,
+        secret_key: process.env.GOCARDLESS_SECRET_KEY!,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Token generation failed: ${response.status} ${errorText}`);
+    }
+
+    const tokenData: TokenResponse = await response.json();
     return tokenData.access;
   } catch (error) {
     console.error("Error generating GoCardless access token:", error);
-    throw new Error("Failed to generate access token");
+    throw new Error(`Failed to generate access token: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
 /**
- * Create a requisition (equivalent to Plaid's link token) for GoCardless
- * Following the official API documentation pattern
+ * Get institutions by country (Step 2)
+ */
+export async function getGoCardlessInstitutions(countryCode: string): Promise<Institution[]> {
+  try {
+    const accessToken = await generateAccessToken();
+    
+    const response = await fetch(`${GOCARDLESS_API_BASE}/institutions/?country=${countryCode}`, {
+      method: "GET",
+      headers: {
+        "accept": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch institutions: ${response.status} ${errorText}`);
+    }
+
+    const institutions: Institution[] = await response.json();
+    return institutions;
+  } catch (error) {
+    console.error("Error fetching GoCardless institutions:", error);
+    throw new Error(`Failed to fetch institutions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Create end user agreement (Step 3)
+ */
+async function createEndUserAgreement(institutionId: string, accessToken: string): Promise<Agreement> {
+  try {
+    const response = await fetch(`${GOCARDLESS_API_BASE}/agreements/enduser/`, {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        institution_id: institutionId,
+        max_historical_days: 90, // 90 days of transaction history
+        access_valid_for_days: 90, // 90 days of account access
+        access_scope: ["balances", "details", "transactions"],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Agreement creation failed: ${response.status} ${errorText}`);
+    }
+
+    const agreement: Agreement = await response.json();
+    return agreement;
+  } catch (error) {
+    console.error("Error creating end user agreement:", error);
+    throw new Error(`Failed to create agreement: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Create a requisition (Step 4) - equivalent to Plaid's link token
  */
 export async function createGoCardlessRequisition(bank: BankInfo, redirectUrl: string = "http://localhost:3000/dashboard/financial") {
   try {
@@ -53,25 +234,35 @@ export async function createGoCardlessRequisition(bank: BankInfo, redirectUrl: s
       throw new Error("Bank not supported by GoCardless");
     }
 
-    // Generate access token first (Step 1 from API docs)
-    await generateAccessToken();
+    // Step 1: Generate access token
+    const accessToken = await generateAccessToken();
     
-    // Create end user agreement (Step 3 from API docs) - optional but recommended
-    const agreement = await nordigenClient.agreement.createEuaAgreement({
-      institutionId: bank.institutionId.gocardless,
-      maxHistoricalDays: 90, // 90 days of transaction history
-      accessValidForDays: 90, // 90 days of account access
-      accessScope: ["balances", "details", "transactions"]
+    // Step 3: Create end user agreement
+    const agreement = await createEndUserAgreement(bank.institutionId.gocardless, accessToken);
+
+    // Step 4: Create requisition
+    const response = await fetch(`${GOCARDLESS_API_BASE}/requisitions/`, {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        redirect: redirectUrl,
+        institution_id: bank.institutionId.gocardless,
+        agreement: agreement.id,
+        reference: `family-${familyId}-${Date.now()}`,
+        user_language: "EN",
+      }),
     });
 
-    // Create requisition (Step 4 from API docs)
-    const requisition = await nordigenClient.initSession({
-      redirectUrl,
-      institutionId: bank.institutionId.gocardless,
-      agreement: agreement.id,
-      reference: `family-${familyId}-${Date.now()}`, // Unique reference for tracking
-      userLanguage: "EN",
-    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Requisition creation failed: ${response.status} ${errorText}`);
+    }
+
+    const requisition: Requisition = await response.json();
 
     return {
       success: true,
@@ -87,8 +278,78 @@ export async function createGoCardlessRequisition(bank: BankInfo, redirectUrl: s
 }
 
 /**
- * Complete GoCardless connection after user authorization
- * Following Step 5 and 6 from the API documentation
+ * Get account details from GoCardless API
+ */
+async function getAccountDetails(accountId: string, accessToken: string): Promise<AccountDetails> {
+  const response = await fetch(`${GOCARDLESS_API_BASE}/accounts/${accountId}/details/`, {
+    method: "GET",
+    headers: {
+      "accept": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch account details: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.account || data;
+}
+
+/**
+ * Get account balances from GoCardless API
+ */
+async function getAccountBalances(accountId: string, accessToken: string): Promise<{ balances: Balance[] }> {
+  const response = await fetch(`${GOCARDLESS_API_BASE}/accounts/${accountId}/balances/`, {
+    method: "GET",
+    headers: {
+      "accept": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch account balances: ${response.status} ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Get account transactions from GoCardless API
+ */
+async function getAccountTransactions(accountId: string, accessToken: string, dateFrom?: string, dateTo?: string): Promise<{ transactions: { booked: Transaction[], pending: Transaction[] } }> {
+  let url = `${GOCARDLESS_API_BASE}/accounts/${accountId}/transactions/`;
+  const params = new URLSearchParams();
+  
+  if (dateFrom) params.append('date_from', dateFrom);
+  if (dateTo) params.append('date_to', dateTo);
+  
+  if (params.toString()) {
+    url += `?${params.toString()}`;
+  }
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "accept": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch account transactions: ${response.status} ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Complete GoCardless connection after user authorization (Step 5 & 6)
  */
 export async function completeGoCardlessConnection(requisitionId: string, bank: BankInfo) {
   const familyId = await getActiveFamilyId();
@@ -100,10 +361,23 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
 
   try {
     // Generate fresh access token
-    await generateAccessToken();
+    const accessToken = await generateAccessToken();
 
     // Step 5: Get requisition details to check status and get account IDs
-    const requisition = await nordigenClient.requisition.getRequisitionById(requisitionId);
+    const response = await fetch(`${GOCARDLESS_API_BASE}/requisitions/${requisitionId}/`, {
+      method: "GET",
+      headers: {
+        "accept": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch requisition: ${response.status} ${errorText}`);
+    }
+
+    const requisition: Requisition = await response.json();
     
     if (requisition.status !== "LN") { // LN = Linked
       throw new Error(`Bank connection not completed. Status: ${requisition.status}`);
@@ -133,13 +407,13 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
     for (const accountId of requisition.accounts) {
       try {
         // Get account details
-        const accountDetails = await nordigenClient.account(accountId).getDetails();
+        const accountDetails = await getAccountDetails(accountId, accessToken);
         
         // Get account balances
-        const accountBalances = await nordigenClient.account(accountId).getBalances();
+        const accountBalances = await getAccountBalances(accountId, accessToken);
 
         // Map GoCardless account type to our AccountType enum
-        const getAccountType = (details: any): AccountType => {
+        const getAccountType = (details: AccountDetails): AccountType => {
           const usage = details.usage?.toLowerCase();
           const product = details.product?.toLowerCase();
           const cashAccountType = details.cashAccountType?.toLowerCase();
@@ -162,20 +436,20 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
 
         const accountType = getAccountType(accountDetails);
         
-                 // Get current balance (prefer interimAvailable, then closingBooked)
-         const balances = accountBalances.balances || [];
-         const availableBalance = balances.find((b: any) => b.balanceType === "interimAvailable");
-         const currentBalance = availableBalance || balances.find((b: any) => b.balanceType === "closingBooked") || balances[0];
+        // Get current balance (prefer interimAvailable, then closingBooked)
+        const balances = accountBalances.balances || [];
+        const availableBalance = balances.find((b: Balance) => b.balanceType === "interimAvailable");
+        const currentBalance = availableBalance || balances.find((b: Balance) => b.balanceType === "closingBooked") || balances[0];
         
         const balance = currentBalance?.balanceAmount?.amount ? 
           parseFloat(currentBalance.balanceAmount.amount) : 0;
         
-        const currency = currentBalance?.balanceAmount?.currency || "EUR";
+        const currency = currentBalance?.balanceAmount?.currency || accountDetails.currency || "EUR";
 
         // Create financial account
         const financialAccount = await prisma.financialAccount.create({
           data: {
-            name: accountDetails.name || 
+            name: accountDetails.displayName || accountDetails.name || 
                   (accountDetails.iban ? `${bank.displayName} ****${accountDetails.iban.slice(-4)}` : `${bank.displayName} Account`),
             type: accountType,
             balance,
@@ -191,7 +465,7 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
         await prisma.connectedAccount.create({
           data: {
             providerAccountId: accountId,
-            accountName: accountDetails.name || financialAccount.name,
+            accountName: accountDetails.displayName || accountDetails.name || financialAccount.name,
             accountType: accountDetails.usage || accountDetails.cashAccountType || "current",
             accountSubtype: accountDetails.product || null,
             iban: accountDetails.iban || null,
@@ -230,7 +504,6 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
 
 /**
  * Import transactions from GoCardless accounts
- * Following Step 6 from the API documentation
  */
 export async function importGoCardlessTransactions(startDate?: Date, endDate?: Date) {
   const familyId = await getActiveFamilyId();
@@ -242,7 +515,7 @@ export async function importGoCardlessTransactions(startDate?: Date, endDate?: D
 
   try {
     // Generate fresh access token
-    await generateAccessToken();
+    const accessToken = await generateAccessToken();
 
     // Get all GoCardless connections for this family
     const connections = await prisma.bankConnection.findMany({
@@ -271,17 +544,15 @@ export async function importGoCardlessTransactions(startDate?: Date, endDate?: D
 
         try {
           // Get transactions from GoCardless API
-          const transactionParams: any = {};
-          if (startDate) {
-            transactionParams.dateFrom = startDate.toISOString().split('T')[0];
-          }
-          if (endDate) {
-            transactionParams.dateTo = endDate.toISOString().split('T')[0];
-          }
+          const dateFrom = startDate?.toISOString().split('T')[0];
+          const dateTo = endDate?.toISOString().split('T')[0];
 
-          const transactionData = await nordigenClient
-            .account(connectedAccount.providerAccountId)
-            .getTransactions(transactionParams);
+          const transactionData = await getAccountTransactions(
+            connectedAccount.providerAccountId, 
+            accessToken, 
+            dateFrom, 
+            dateTo
+          );
 
           // Process booked transactions
           const bookedTransactions = transactionData.transactions?.booked || [];
@@ -323,7 +594,7 @@ export async function importGoCardlessTransactions(startDate?: Date, endDate?: D
  * Process a single GoCardless transaction
  */
 async function processGoCardlessTransaction(
-  transaction: any, 
+  transaction: Transaction, 
   connectedAccount: any, 
   familyId: string, 
   isPending: boolean,
@@ -355,6 +626,7 @@ async function processGoCardlessTransaction(
 
   // Extract description
   const description = transaction.remittanceInformationUnstructured || 
+                     transaction.remittanceInformationStructured ||
                      transaction.additionalInformation ||
                      (transaction.creditorName ? `Payment to ${transaction.creditorName}` : 
                       transaction.debtorName ? `Payment from ${transaction.debtorName}` : 
@@ -381,6 +653,8 @@ async function processGoCardlessTransaction(
         ...(transaction.bankTransactionCode ? [`code:${transaction.bankTransactionCode}`] : []),
         ...(transaction.creditorAccount?.iban ? [`creditor:${transaction.creditorAccount.iban}`] : []),
         ...(transaction.debtorAccount?.iban ? [`debtor:${transaction.debtorAccount.iban}`] : []),
+        ...(transaction.endToEndId ? [`e2e:${transaction.endToEndId}`] : []),
+        ...(transaction.mandateId ? [`mandate:${transaction.mandateId}`] : []),
       ],
     },
   });
@@ -399,7 +673,7 @@ export async function syncGoCardlessBalances() {
 
   try {
     // Generate fresh access token
-    await generateAccessToken();
+    const accessToken = await generateAccessToken();
 
     // Get all GoCardless connections
     const connections = await prisma.bankConnection.findMany({
@@ -423,15 +697,13 @@ export async function syncGoCardlessBalances() {
         if (!connectedAccount.financialAccount) continue;
 
         try {
-          const balanceData = await nordigenClient
-            .account(connectedAccount.providerAccountId)
-            .getBalances();
+          const balanceData = await getAccountBalances(connectedAccount.providerAccountId, accessToken);
 
-                     const balances = balanceData.balances || [];
-           
-           // Prefer interimAvailable balance, then closingBooked
-           const availableBalance = balances.find((b: any) => b.balanceType === "interimAvailable");
-           const currentBalance = availableBalance || balances.find((b: any) => b.balanceType === "closingBooked") || balances[0];
+          const balances = balanceData.balances || [];
+          
+          // Prefer interimAvailable balance, then closingBooked
+          const availableBalance = balances.find((b: Balance) => b.balanceType === "interimAvailable");
+          const currentBalance = availableBalance || balances.find((b: Balance) => b.balanceType === "closingBooked") || balances[0];
 
           if (currentBalance?.balanceAmount?.amount !== undefined) {
             const balance = parseFloat(currentBalance.balanceAmount.amount);
