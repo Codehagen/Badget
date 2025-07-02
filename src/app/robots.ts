@@ -24,28 +24,7 @@ export default function robots(): MetadataRoute.Robots {
           "/app/",
           "/private/",
           "*.json",
-          "/sitemap.xml",
         ],
-      },
-      {
-        userAgent: "GPTBot",
-        disallow: "/",
-      },
-      {
-        userAgent: "ChatGPT-User",
-        disallow: "/",
-      },
-      {
-        userAgent: "CCBot",
-        disallow: "/",
-      },
-      {
-        userAgent: "anthropic-ai",
-        disallow: "/",
-      },
-      {
-        userAgent: "Claude-Web",
-        disallow: "/",
       },
     ],
     sitemap: `${HOME_DOMAIN}/sitemap.xml`,
