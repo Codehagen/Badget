@@ -13,6 +13,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import BlurImage from "@/lib/blur-image";
 import { Button } from "@/components/ui/button";
+import { constructMetadata } from "@/lib/construct-metadata";
 
 // Get all unique categories from blog posts
 function getAllCategories() {
@@ -50,25 +51,17 @@ export async function generateMetadata({
   const posts = getPostsByCategory(category);
 
   if (posts.length === 0) {
-    return {
+    return constructMetadata({
       title: "Category not found",
-    };
+      description: "The requested category could not be found.",
+      noIndex: true,
+    });
   }
 
-  return {
+  return constructMetadata({
     title: `${categoryDisplay} - Blog`,
     description: `Browse all ${categoryDisplay.toLowerCase()} articles and tutorials from the Badget team.`,
-    openGraph: {
-      title: `${categoryDisplay} - Blog`,
-      description: `Browse all ${categoryDisplay.toLowerCase()} articles and tutorials from the Badget team.`,
-      type: "website",
-    },
-    twitter: {
-      card: "summary",
-      title: `${categoryDisplay} - Blog`,
-      description: `Browse all ${categoryDisplay.toLowerCase()} articles and tutorials from the Badget team.`,
-    },
-  };
+  });
 }
 
 export default async function CategoryPage({

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatDistanceToNow, format } from "date-fns";
 import { EnhancedTableOfContents } from "@/components/blog/enhanced-table-of-contents";
 import { mdxComponents } from "@/components/mdx/mdx-components";
+import { constructMetadata } from "@/lib/construct-metadata";
 
 export async function generateStaticParams() {
   return allHelps.map((article: any) => ({
@@ -24,27 +25,17 @@ export async function generateMetadata({
   const article = allHelps.find((article: any) => article.slug === slug);
 
   if (!article) {
-    return {
+    return constructMetadata({
       title: "Help article not found",
-    };
+      description: "The requested help article could not be found.",
+      noIndex: true,
+    });
   }
 
-  return {
+  return constructMetadata({
     title: `${article.title} - Help Center`,
     description: article.description,
-    openGraph: {
-      title: article.title,
-      description: article.description,
-      type: "article",
-      publishedTime: article.publishedAt,
-      modifiedTime: article.updatedAt,
-    },
-    twitter: {
-      card: "summary",
-      title: article.title,
-      description: article.description,
-    },
-  };
+  });
 }
 
 export default async function HelpArticle({

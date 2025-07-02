@@ -11,6 +11,12 @@ import { Calendar, Clock, Search } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
+import { constructMetadata } from "@/lib/construct-metadata";
+
+export const metadata = constructMetadata({
+  title: "Help Center - Badget",
+  description: "Find answers to common questions and learn how to get the most out of Badget.",
+});
 
 export default function HelpPage() {
   // Sort help articles by publishedAt date, newest first

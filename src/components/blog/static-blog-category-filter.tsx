@@ -23,7 +23,7 @@ function getCategoriesWithCounts() {
 }
 
 export function StaticBlogCategoryFilter() {
-  const categoriesWithCounts = getCategoriesWithCounts();
+  const categoriesWithCounts = getCategoriesWithCounts().slice(0, 3); // Limit to top 3 categories
   const totalPosts = allBlogs.length;
 
   return (

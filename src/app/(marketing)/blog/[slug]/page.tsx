@@ -10,6 +10,7 @@ import { EnhancedTableOfContents } from "@/components/blog/enhanced-table-of-con
 import { mdxComponents } from "@/components/mdx/mdx-components";
 import BlurImage from "@/lib/blur-image";
 import { RelatedPosts } from "@/components/blog/related-posts";
+import { constructMetadata } from "@/lib/construct-metadata";
 
 type BlogPost = (typeof allBlogs)[0];
 
@@ -28,31 +29,18 @@ export async function generateMetadata({
   const post = allBlogs.find((post) => post.slug === slug);
 
   if (!post) {
-    return {
+    return constructMetadata({
       title: "Post not found",
-    };
+      description: "The requested blog post could not be found.",
+      noIndex: true,
+    });
   }
 
-  // Get author name for metadata
-  const authorName = post.authorData?.name || post.author;
-
-  return {
+  return constructMetadata({
     title: post.title,
     description: post.description,
-    openGraph: {
-      title: post.title,
-      description: post.description,
-      type: "article",
-      publishedTime: post.publishedAt,
-      authors: authorName ? [authorName] : undefined,
-      tags: post.tags,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: post.title,
-      description: post.description,
-    },
-  };
+    image: post.image || `/api/og?title=${encodeURIComponent(post.title)}`,
+  });
 }
 
 export default async function BlogPost({

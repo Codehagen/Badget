@@ -12,21 +12,12 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import BlurImage from "@/lib/blur-image";
 import { StaticBlogCategoryFilter } from "@/components/blog/static-blog-category-filter";
+import { constructMetadata } from "@/lib/construct-metadata";
 
-export const metadata = {
+export const metadata = constructMetadata({
   title: "Blog - Badget",
   description: "Insights, tutorials, and updates from the Badget team. Learn how to optimize your link management strategy.",
-  openGraph: {
-    title: "Blog - Badget",
-    description: "Insights, tutorials, and updates from the Badget team. Learn how to optimize your link management strategy.",
-    type: "website",
-  },
-  twitter: {
-    card: "summary",
-    title: "Blog - Badget",
-    description: "Insights, tutorials, and updates from the Badget team. Learn how to optimize your link management strategy.",
-  },
-};
+});
 
 export default function BlogPage() {
   // Sort blog posts by publishedAt date, newest first
