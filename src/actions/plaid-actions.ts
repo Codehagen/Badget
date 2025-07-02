@@ -1,3 +1,5 @@
+"use server";
+
 import {
   Configuration,
   PlaidApi,
@@ -8,8 +10,8 @@ import {
   TransactionsGetRequest,
   CountryCode,
   Products,
-} from 'plaid';
-import { PrismaClient } from "@/generated/prisma";
+} from "plaid";
+import { PrismaClient, AccountType } from "@/generated/prisma";
 import { getCurrentAppUser } from "./user-actions";
 
 // Initialize Plaid client
@@ -17,8 +19,9 @@ const configuration = new Configuration({
   basePath: PlaidEnvironments.sandbox, // Use sandbox for development
   baseOptions: {
     headers: {
-      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID!,
-      'PLAID-SECRET': process.env.PLAID_SECRET!,
+      "PLAID-CLIENT-ID": process.env.PLAID_CLIENT_ID!,
+      "PLAID-SECRET": process.env.PLAID_SECRET!,
+      "Plaid-Version": "2020-09-14",
     },
   },
 });
@@ -48,7 +51,7 @@ export async function createLinkToken() {
       products: [Products.Transactions],
       client_name: "Badget",
       country_codes: [CountryCode.Us],
-      language: 'en',
+      language: "en",
       user: {
         client_user_id: appUser.id,
       },
@@ -79,7 +82,8 @@ export async function exchangePublicToken(publicToken: string) {
       public_token: publicToken,
     };
 
-    const exchangeResponse = await plaidClient.itemPublicTokenExchange(exchangeRequest);
+    const exchangeResponse =
+      await plaidClient.itemPublicTokenExchange(exchangeRequest);
     const accessToken = exchangeResponse.data.access_token;
     const itemId = exchangeResponse.data.item_id;
 
@@ -105,30 +109,37 @@ export async function exchangePublicToken(publicToken: string) {
     const createdAccounts = await Promise.all(
       accounts.map(async (account) => {
         // Map Plaid account type to our AccountType enum
-        const getAccountType = (plaidType: string, plaidSubtype: string) => {
+        const getAccountType = (
+          plaidType: string,
+          plaidSubtype: string
+        ): AccountType => {
           switch (plaidType) {
-            case 'depository':
-              return plaidSubtype === 'savings' ? 'SAVINGS' : 'CHECKING';
-            case 'credit':
-              return 'CREDIT_CARD';
-            case 'investment':
-              return 'INVESTMENT';
-            case 'loan':
-              return account.subtype === 'mortgage' ? 'MORTGAGE' : 'LOAN';
+            case "depository":
+              return plaidSubtype === "savings"
+                ? AccountType.SAVINGS
+                : AccountType.CHECKING;
+            case "credit":
+              return AccountType.CREDIT_CARD;
+            case "investment":
+              return AccountType.INVESTMENT;
+            case "loan":
+              return account.subtype === "mortgage"
+                ? AccountType.MORTGAGE
+                : AccountType.LOAN;
             default:
-              return 'OTHER';
+              return AccountType.OTHER;
           }
         };
 
-        const accountType = getAccountType(account.type, account.subtype || '');
-        
+        const accountType = getAccountType(account.type, account.subtype || "");
+
         // Create financial account in our database
         const financialAccount = await prisma.financialAccount.create({
           data: {
             name: account.name,
-            type: accountType as any,
+            type: accountType,
             balance: account.balances.current || 0,
-            currency: account.balances.iso_currency_code || 'USD',
+            currency: account.balances.iso_currency_code || "USD",
             institution: accountsResponse.data.item.institution_id || null,
             accountNumber: account.mask ? `****${account.mask}` : null,
             familyId,
@@ -155,10 +166,10 @@ export async function exchangePublicToken(publicToken: string) {
       })
     );
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       accounts: createdAccounts,
-      message: `Successfully connected ${accounts.length} accounts`
+      message: `Successfully connected ${accounts.length} accounts`,
     };
   } catch (error) {
     console.error("Error exchanging public token:", error);
@@ -207,28 +218,34 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
 
       // Set date range (default to last 30 days)
       const end = endDate || new Date();
-      const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const start =
+        startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
       // Get transactions
       const transactionsRequest: TransactionsGetRequest = {
         access_token: item.accessToken,
-        start_date: start.toISOString().split('T')[0],
-        end_date: end.toISOString().split('T')[0],
+        start_date: start.toISOString().split("T")[0],
+        end_date: end.toISOString().split("T")[0],
       };
 
-      const transactionsResponse = await plaidClient.transactionsGet(transactionsRequest);
+      const transactionsResponse =
+        await plaidClient.transactionsGet(transactionsRequest);
       const transactions = transactionsResponse.data.transactions;
 
       // Import transactions
       for (const transaction of transactions) {
         // Find corresponding financial account
-        const plaidAccount = accounts.find(acc => acc.account_id === transaction.account_id);
+        const plaidAccount = accounts.find(
+          (acc) => acc.account_id === transaction.account_id
+        );
         if (!plaidAccount) continue;
 
         const financialAccount = await prisma.financialAccount.findFirst({
           where: {
             familyId,
-            accountNumber: plaidAccount.mask ? `****${plaidAccount.mask}` : null,
+            accountNumber: plaidAccount.mask
+              ? `****${plaidAccount.mask}`
+              : null,
             name: plaidAccount.name,
           },
         });
@@ -248,8 +265,8 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
         if (existingTransaction) continue;
 
         // Determine transaction type
-        const transactionType = transaction.amount < 0 ? 'EXPENSE' : 'INCOME';
-        
+        const transactionType = transaction.amount < 0 ? "EXPENSE" : "INCOME";
+
         // Create transaction
         await prisma.transaction.create({
           data: {
@@ -258,7 +275,7 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
             merchant: transaction.merchant_name || transaction.name,
             amount: Math.abs(transaction.amount),
             type: transactionType,
-            status: 'NEEDS_CATEGORIZATION',
+            status: "NEEDS_CATEGORIZATION",
             accountId: financialAccount.id,
             familyId,
             // Store original Plaid transaction data
@@ -273,7 +290,7 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
     return {
       success: true,
       transactionsImported: totalTransactions,
-      message: `Successfully imported ${totalTransactions} transactions`
+      message: `Successfully imported ${totalTransactions} transactions`,
     };
   } catch (error) {
     console.error("Error importing transactions:", error);
@@ -340,7 +357,7 @@ export async function syncAccountBalances() {
     return {
       success: true,
       accountsUpdated,
-      message: `Successfully updated ${accountsUpdated} account balances`
+      message: `Successfully updated ${accountsUpdated} account balances`,
     };
   } catch (error) {
     console.error("Error syncing account balances:", error);

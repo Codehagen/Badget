@@ -12,7 +12,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Building2, CreditCard, Banknote, AlertCircle } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Building2,
+  CreditCard,
+  Banknote,
+  AlertCircle,
+} from "lucide-react";
 import { createLinkToken, exchangePublicToken } from "@/actions/plaid-actions";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -45,9 +52,10 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
   const [error, setError] = useState<string | null>(null);
 
   // Filter banks based on search query
-  const filteredBanks = POPULAR_BANKS.filter(bank =>
-    bank.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    bank.type.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredBanks = POPULAR_BANKS.filter(
+    (bank) =>
+      bank.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bank.type.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Create link token when modal opens
@@ -77,7 +85,7 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
     try {
       setIsLoading(true);
       const response = await exchangePublicToken(publicToken);
-      
+
       if (response.success) {
         toast.success(response.message);
         setIsOpen(false);
@@ -138,10 +146,13 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">Connect Your Bank Account</DialogTitle>
+          <DialogTitle className="text-xl">
+            Connect Your Bank Account
+          </DialogTitle>
           <DialogDescription>
-            Securely connect your bank accounts to import transactions and track your finances.
-            We use bank-level security to protect your information.
+            Securely connect your bank accounts to import transactions and track
+            your finances. We use bank-level security to protect your
+            information.
           </DialogDescription>
         </DialogHeader>
 
@@ -170,7 +181,8 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
             <div className="text-center">
               <h3 className="font-semibold mb-2">Connect Any Bank</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Securely connect to thousands of banks and financial institutions
+                Securely connect to thousands of banks and financial
+                institutions
               </p>
             </div>
             <Button
@@ -204,7 +216,10 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
                   {getBankIcon(bank.icon)}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{bank.name}</div>
-                    <Badge variant={getBadgeVariant(bank.type) as any} className="text-xs">
+                    <Badge
+                      variant={getBadgeVariant(bank.type) as any}
+                      className="text-xs"
+                    >
                       {bank.type}
                     </Badge>
                   </div>
@@ -216,7 +231,10 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
               <div className="text-center py-8 text-muted-foreground">
                 <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p>No banks found matching "{searchQuery}"</p>
-                <p className="text-sm">Try the "Connect Bank Account" button above to search all supported institutions.</p>
+                <p className="text-sm">
+                  Try the "Connect Bank Account" button above to search all
+                  supported institutions.
+                </p>
               </div>
             )}
           </div>
@@ -225,8 +243,16 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
           <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex items-start gap-3">
               <div className="text-blue-600 dark:text-blue-400 mt-0.5">
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-7-4z" clipRule="evenodd" />
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-7-4z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </div>
               <div>
@@ -234,7 +260,9 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
                   Your data is secure
                 </h5>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  We use Plaid's bank-level security with 256-bit encryption. We never store your banking credentials and can only access read-only transaction data.
+                  We use Plaid's bank-level security with 256-bit encryption. We
+                  never store your banking credentials and can only access
+                  read-only transaction data.
                 </p>
               </div>
             </div>
