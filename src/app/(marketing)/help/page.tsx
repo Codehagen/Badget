@@ -16,7 +16,9 @@ import {
   Settings,
   HelpCircle,
   Book,
-  Zap,
+  DollarSign,
+  ArrowUpDown,
+  Coins,
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
@@ -39,24 +41,6 @@ interface HelpCategory {
 
 const HELP_CATEGORIES: HelpCategory[] = [
   {
-    id: "api",
-    title: "API & Developers",
-    description:
-      "Complete API reference, SDKs, and developer guides for integrating with Badget.",
-    icon: Code,
-    tags: ["api", "reference", "developers"],
-    color: "bg-blue-500/10 text-blue-600 border-blue-200",
-  },
-  {
-    id: "domains",
-    title: "Custom Domains",
-    description:
-      "Set up branded domains, SSL certificates, and domain configuration.",
-    icon: Settings,
-    tags: ["domains", "branding", "setup"],
-    color: "bg-green-500/10 text-green-600 border-green-200",
-  },
-  {
     id: "getting-started",
     title: "Getting Started",
     description:
@@ -66,12 +50,30 @@ const HELP_CATEGORIES: HelpCategory[] = [
     color: "bg-purple-500/10 text-purple-600 border-purple-200",
   },
   {
-    id: "analytics",
-    title: "Analytics & Tracking",
+    id: "budget",
+    title: "Budget Management",
     description:
-      "Understanding your link performance, analytics, and tracking features.",
-    icon: Zap,
-    tags: ["analytics", "tracking", "reports"],
+      "Create and manage budgets, set spending limits, and track your financial goals.",
+    icon: DollarSign,
+    tags: ["budget", "planning", "goals"],
+    color: "bg-green-500/10 text-green-600 border-green-200",
+  },
+  {
+    id: "transactions",
+    title: "Transactions",
+    description:
+      "Record, categorize, and manage your income and expenses effectively.",
+    icon: ArrowUpDown,
+    tags: ["transactions", "expenses", "income"],
+    color: "bg-blue-500/10 text-blue-600 border-blue-200",
+  },
+  {
+    id: "assets",
+    title: "Assets & Investments",
+    description:
+      "Track your assets, investments, and build comprehensive financial reports.",
+    icon: Coins,
+    tags: ["assets", "investments", "reports"],
     color: "bg-orange-500/10 text-orange-600 border-orange-200",
   },
 ];
@@ -200,37 +202,7 @@ export default function HelpPage() {
             <h2 className="text-2xl font-semibold mb-6">Quick Actions</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Link
-                href="/help/api-reference"
-                className="p-6 border border-border rounded-lg hover:border-border/80 hover:shadow-md transition-all duration-200 text-center group"
-              >
-                <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                  <FileText className="w-6 h-6 text-blue-600" />
-                </div>
-                <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
-                  API Reference
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Complete API documentation
-                </p>
-              </Link>
-
-              <Link
-                href="/help/custom-domains"
-                className="p-6 border border-border rounded-lg hover:border-border/80 hover:shadow-md transition-all duration-200 text-center group"
-              >
-                <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                  <Settings className="w-6 h-6 text-green-600" />
-                </div>
-                <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
-                  Custom Domains
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Set up branded domains
-                </p>
-              </Link>
-
-              <Link
-                href="/blog/getting-started"
+                href="/help/getting-started"
                 className="p-6 border border-border rounded-lg hover:border-border/80 hover:shadow-md transition-all duration-200 text-center group"
               >
                 <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
@@ -241,6 +213,36 @@ export default function HelpPage() {
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   Learn the basics
+                </p>
+              </Link>
+
+              <Link
+                href="/help/budget-management"
+                className="p-6 border border-border rounded-lg hover:border-border/80 hover:shadow-md transition-all duration-200 text-center group"
+              >
+                <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                  <DollarSign className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
+                  Budget Management
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Create and manage budgets
+                </p>
+              </Link>
+
+              <Link
+                href="/help/transactions"
+                className="p-6 border border-border rounded-lg hover:border-border/80 hover:shadow-md transition-all duration-200 text-center group"
+              >
+                <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                  <ArrowUpDown className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
+                  Transactions
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Manage income & expenses
                 </p>
               </Link>
 

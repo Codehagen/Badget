@@ -6,9 +6,9 @@ export const POPULAR_ARTICLES_CONFIG = {
   // Array of article slugs in order of popularity
   slugs: [
     "getting-started",
-    "api-reference", 
-    "custom-domains",
-    "analytics-tracking",
+    "budget-management",
+    "transactions", 
+    "assets-investments",
     "troubleshooting",
   ],
   // Maximum number of popular articles to show
