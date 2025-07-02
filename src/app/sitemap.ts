@@ -13,6 +13,17 @@ function getAllCategories() {
   return Array.from(categories);
 }
 
+// Get all unique categories from help articles
+function getAllHelpCategories() {
+  const categories = new Set<string>();
+  allHelps.forEach((article) => {
+    if (article.tags) {
+      article.tags.forEach((tag) => categories.add(tag.toLowerCase()));
+    }
+  });
+  return Array.from(categories);
+}
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrls: MetadataRoute.Sitemap = [
     {
@@ -69,6 +80,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
+  // Add help categories
+  const helpCategoryUrls: MetadataRoute.Sitemap = getAllHelpCategories().map((category) => ({
+    url: `${HOME_DOMAIN}/help/category/${category}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly",
+    priority: 0.6,
+  }));
+
   // Add help articles
   const helpUrls: MetadataRoute.Sitemap = allHelps.map((article) => ({
     url: `${HOME_DOMAIN}/help/${article.slug}`,
@@ -77,5 +96,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  return [...baseUrls, ...blogUrls, ...categoryUrls, ...helpUrls];
+  return [...baseUrls, ...blogUrls, ...categoryUrls, ...helpCategoryUrls, ...helpUrls];
 }
