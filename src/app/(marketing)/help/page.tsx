@@ -10,18 +10,15 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Search,
-  FileText,
-  Code,
-  Settings,
-  HelpCircle,
-  Book,
-  DollarSign,
-  ArrowUpDown,
-  Coins,
-  ArrowRight,
-  type LucideIcon,
-} from "lucide-react";
+  IconSearch,
+  IconHelp,
+  IconBook,
+  IconCurrencyDollar,
+  IconArrowsExchange,
+  IconCoins,
+  IconArrowRight,
+  type Icon,
+} from "@tabler/icons-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { HelpSearchDialog } from "@/components/help/help-search-dialog";
@@ -34,7 +31,7 @@ interface HelpCategory {
   id: string;
   title: string;
   description: string;
-  icon: LucideIcon;
+  icon: Icon;
   tags: string[];
   color: string;
 }
@@ -45,7 +42,7 @@ const HELP_CATEGORIES: HelpCategory[] = [
     title: "Getting Started",
     description:
       "Basic guides and tutorials to help you get up and running with Badget.",
-    icon: Book,
+    icon: IconBook,
     tags: ["tutorial", "basics", "setup"],
     color: "bg-purple-500/10 text-purple-600 border-purple-200",
   },
@@ -54,7 +51,7 @@ const HELP_CATEGORIES: HelpCategory[] = [
     title: "Budget Management",
     description:
       "Create and manage budgets, set spending limits, and track your financial goals.",
-    icon: DollarSign,
+    icon: IconCurrencyDollar,
     tags: ["budget", "planning", "goals"],
     color: "bg-green-500/10 text-green-600 border-green-200",
   },
@@ -63,7 +60,7 @@ const HELP_CATEGORIES: HelpCategory[] = [
     title: "Transactions",
     description:
       "Record, categorize, and manage your income and expenses effectively.",
-    icon: ArrowUpDown,
+    icon: IconArrowsExchange,
     tags: ["transactions", "expenses", "income"],
     color: "bg-blue-500/10 text-blue-600 border-blue-200",
   },
@@ -72,7 +69,7 @@ const HELP_CATEGORIES: HelpCategory[] = [
     title: "Assets & Investments",
     description:
       "Track your assets, investments, and build comprehensive financial reports.",
-    icon: Coins,
+    icon: IconCoins,
     tags: ["assets", "investments", "reports"],
     color: "bg-orange-500/10 text-orange-600 border-orange-200",
   },
@@ -101,7 +98,7 @@ export default function HelpPage() {
 
             {/* Search Bar */}
             <div className="relative max-w-lg mx-auto">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 type="search"
                 placeholder="Search for articles..."
@@ -130,7 +127,7 @@ export default function HelpPage() {
                   <span className="text-foreground group-hover:text-primary transition-colors">
                     {article.title}
                   </span>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <IconArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </Link>
               ))}
             </div>
@@ -206,7 +203,7 @@ export default function HelpPage() {
                 className="p-6 border border-border rounded-lg hover:border-border/80 hover:shadow-md transition-all duration-200 text-center group"
               >
                 <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                  <Book className="w-6 h-6 text-purple-600" />
+                  <IconBook className="w-6 h-6 text-purple-600" />
                 </div>
                 <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
                   Getting Started
@@ -221,7 +218,7 @@ export default function HelpPage() {
                 className="p-6 border border-border rounded-lg hover:border-border/80 hover:shadow-md transition-all duration-200 text-center group"
               >
                 <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                  <DollarSign className="w-6 h-6 text-green-600" />
+                  <IconCurrencyDollar className="w-6 h-6 text-green-600" />
                 </div>
                 <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
                   Budget Management
@@ -236,7 +233,7 @@ export default function HelpPage() {
                 className="p-6 border border-border rounded-lg hover:border-border/80 hover:shadow-md transition-all duration-200 text-center group"
               >
                 <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                  <ArrowUpDown className="w-6 h-6 text-blue-600" />
+                  <IconArrowsExchange className="w-6 h-6 text-blue-600" />
                 </div>
                 <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
                   Transactions
@@ -251,7 +248,7 @@ export default function HelpPage() {
                 className="p-6 border border-border rounded-lg hover:border-border/80 hover:shadow-md transition-all duration-200 text-center group"
               >
                 <div className="w-12 h-12 bg-orange-500/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                  <HelpCircle className="w-6 h-6 text-orange-600" />
+                  <IconHelp className="w-6 h-6 text-orange-600" />
                 </div>
                 <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
                   Contact Support
