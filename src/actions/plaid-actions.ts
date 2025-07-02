@@ -269,7 +269,7 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
         // Determine transaction type
         const transactionType = transaction.amount < 0 ? "EXPENSE" : "INCOME";
 
-        // Create transaction
+        // Create transaction with enhanced Plaid data
         await prisma.transaction.create({
           data: {
             date: new Date(transaction.date),
@@ -280,7 +280,24 @@ export async function importTransactions(startDate?: Date, endDate?: Date) {
             status: "NEEDS_CATEGORIZATION",
             accountId: financialAccount.id,
             familyId,
-            // Store original Plaid transaction data
+            // Enhanced Plaid-specific fields
+            plaidTransactionId: transaction.transaction_id,
+            plaidCategory: transaction.category || [],
+            plaidSubcategory: transaction.category?.[0] || null,
+            merchantLogo: transaction.logo_url || null,
+            location: transaction.location ? {
+              address: transaction.location.address,
+              city: transaction.location.city,
+              region: transaction.location.region,
+              postal_code: transaction.location.postal_code,
+              country: transaction.location.country,
+              lat: transaction.location.lat,
+              lon: transaction.location.lon,
+            } : null,
+            pending: transaction.pending,
+            authorizedDate: transaction.authorized_date ? new Date(transaction.authorized_date) : null,
+            iso_currency_code: transaction.iso_currency_code,
+            // Store original transaction ID in tags for backward compatibility
             tags: [transaction.transaction_id],
           },
         });

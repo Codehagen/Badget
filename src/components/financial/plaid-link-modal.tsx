@@ -30,24 +30,25 @@ interface PlaidLinkModalProps {
 
 // Common banks for the search/browse interface
 const POPULAR_BANKS = [
-  { name: "Chase", icon: Building2, type: "Major Bank" },
-  { name: "Bank of America", icon: Building2, type: "Major Bank" },
-  { name: "Wells Fargo", icon: Building2, type: "Major Bank" },
-  { name: "Citi", icon: Building2, type: "Major Bank" },
-  { name: "Capital One", icon: CreditCard, type: "Credit Card" },
-  { name: "American Express", icon: CreditCard, type: "Credit Card" },
-  { name: "Discover", icon: CreditCard, type: "Credit Card" },
-  { name: "US Bank", icon: Building2, type: "Major Bank" },
-  { name: "PNC Bank", icon: Building2, type: "Regional Bank" },
-  { name: "TD Bank", icon: Building2, type: "Regional Bank" },
-  { name: "Navy Federal", icon: Building2, type: "Credit Union" },
-  { name: "Ally Bank", icon: Banknote, type: "Online Bank" },
+  { name: "Chase", icon: Building2, type: "Major Bank", region: "US" },
+  { name: "Bank of America", icon: Building2, type: "Major Bank", region: "US" },
+  { name: "Wells Fargo", icon: Building2, type: "Major Bank", region: "US" },
+  { name: "Citi", icon: Building2, type: "Major Bank", region: "US" },
+  { name: "Capital One", icon: CreditCard, type: "Credit Card", region: "US" },
+  { name: "American Express", icon: CreditCard, type: "Credit Card", region: "US" },
+  { name: "Discover", icon: CreditCard, type: "Credit Card", region: "US" },
+  { name: "US Bank", icon: Building2, type: "Major Bank", region: "US" },
+  { name: "PNC Bank", icon: Building2, type: "Regional Bank", region: "US" },
+  { name: "TD Bank", icon: Building2, type: "Regional Bank", region: "US/CA" },
+  { name: "Navy Federal", icon: Building2, type: "Credit Union", region: "US" },
+  { name: "Ally Bank", icon: Banknote, type: "Online Bank", region: "US" },
 ];
 
 export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,7 +113,17 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
     },
   });
 
+  const handleBankSelect = (bankName: string) => {
+    setSelectedBank(bankName);
+    setSearchQuery(bankName);
+  };
+
   const handleConnectBank = () => {
+    if (!selectedBank) {
+      setError("Please select a bank first");
+      return;
+    }
+
     if (ready && linkToken) {
       // Close our modal first to prevent z-index issues
       setIsOpen(false);
@@ -182,31 +193,63 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
             </div>
           )}
 
-          {/* Quick Connect Button */}
-          <div className="flex flex-col items-center gap-4 p-6 bg-muted/50 rounded-lg border-2 border-dashed">
-            <div className="text-center">
-              <h3 className="font-semibold mb-2">Connect Any Bank</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Securely connect to thousands of banks and financial
-                institutions
-              </p>
+          {/* Selected Bank & Connect Button */}
+          {selectedBank ? (
+            <div className="flex flex-col items-center gap-4 p-6 bg-green-50 dark:bg-green-950/20 rounded-lg border-2 border-green-200 dark:border-green-800">
+              <div className="text-center">
+                <h3 className="font-semibold mb-2 text-green-900 dark:text-green-100">
+                  Ready to Connect: {selectedBank}
+                </h3>
+                <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+                  Click below to securely connect your {selectedBank} account
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    setSelectedBank(null);
+                    setSearchQuery("");
+                  }}
+                  variant="outline"
+                  size="lg"
+                >
+                  Choose Different Bank
+                </Button>
+                <Button
+                  onClick={handleConnectBank}
+                  disabled={!ready || isLoading || !linkToken}
+                  size="lg"
+                  className="min-w-[200px]"
+                >
+                  {isLoading ? (
+                    "Connecting..."
+                  ) : (
+                    <>
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Connect {selectedBank}
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
-            <Button
-              onClick={handleConnectBank}
-              disabled={!ready || isLoading || !linkToken}
-              size="lg"
-              className="min-w-[200px]"
-            >
-              {isLoading ? (
-                "Connecting..."
-              ) : (
-                <>
-                  <Building2 className="mr-2 h-4 w-4" />
-                  Connect Bank Account
-                </>
-              )}
-            </Button>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center gap-4 p-6 bg-muted/50 rounded-lg border-2 border-dashed">
+              <div className="text-center">
+                <h3 className="font-semibold mb-2">Select Your Bank</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Search and select your bank from the list below to continue
+                </p>
+              </div>
+              <Button
+                disabled
+                size="lg"
+                className="min-w-[200px] opacity-50"
+              >
+                <Building2 className="mr-2 h-4 w-4" />
+                Select a Bank First
+              </Button>
+            </div>
+          )}
 
           {/* Popular Banks Grid */}
           <div>
@@ -215,9 +258,12 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
               {filteredBanks.map((bank) => (
                 <button
                   key={bank.name}
-                  onClick={handleConnectBank}
-                  disabled={!ready || isLoading || !linkToken}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleBankSelect(bank.name)}
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                    selectedBank === bank.name
+                      ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800"
+                      : "hover:bg-muted/50"
+                  }`}
                 >
                   {getBankIcon(bank.icon)}
                   <div className="flex-1 min-w-0">
@@ -243,6 +289,22 @@ export function PlaidLinkModal({ onSuccess }: PlaidLinkModalProps) {
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Regional Notice */}
+          <div className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800 mb-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400 mt-0.5" />
+              <div>
+                <h5 className="font-medium text-orange-900 dark:text-orange-100 mb-1">
+                  Regional Availability
+                </h5>
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  Plaid currently supports US, Canada, and UK banks. For Norwegian banks (BankID), 
+                  consider alternatives like <strong>Tink</strong>, <strong>GoCardless</strong>, or <strong>Aiia</strong>.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Security Notice */}

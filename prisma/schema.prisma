@@ -392,6 +392,16 @@ model Transaction {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
+  // Enhanced Plaid-specific fields
+  plaidTransactionId String? @unique // Original Plaid transaction ID
+  plaidCategory      String[] // Plaid's category classification
+  plaidSubcategory   String?  // More specific categorization
+  merchantLogo       String?  // URL to merchant logo
+  location           Json?    // Store location data as JSON
+  pending            Boolean  @default(false) // Is transaction pending
+  authorizedDate     DateTime? // When transaction was authorized
+  iso_currency_code  String?  // ISO currency code from Plaid
+
   // Relationships
   accountId  String
   account    FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
