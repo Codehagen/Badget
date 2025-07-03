@@ -11,7 +11,9 @@ import {
   CheckCircle, 
   ExternalLink,
   Clock,
-  Coins
+  Coins,
+  Link2,
+  CreditCard
 } from "lucide-react";
 import { 
   testTriggerPlaidTransactionImport,
@@ -19,7 +21,10 @@ import {
   testTriggerPlaidBalanceSync,
   testTriggerGoCardlessBalanceSync,
   testTriggerBothProvidersTransactionImport,
-  testTriggerBothProvidersBalanceSync
+  testTriggerBothProvidersBalanceSync,
+  testTriggerPlaidConnection,
+  testTriggerGoCardlessConnection,
+  testTriggerBothProvidersConnection
 } from "@/actions/trigger-test-actions";
 import { toast } from "sonner";
 import {
@@ -233,10 +238,70 @@ export function TriggerTestButton({
         
         <DropdownMenuSeparator />
         
+        {/* Bank Connection Tests */}
+        <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+          Bank Connections (Mock Data)
+        </DropdownMenuLabel>
+        
+        <DropdownMenuItem 
+          onClick={() => handleOperation(
+            () => testTriggerPlaidConnection(),
+            "Plaid Connection Test"
+          )}
+          disabled={isLoading}
+          className="flex items-center justify-between"
+        >
+          <div className="flex items-center">
+            <Link2 className="mr-2 h-4 w-4" />
+            Plaid Connection
+          </div>
+          {isLoading && activeOperation === "Plaid Connection Test" && (
+            <Clock className="h-3 w-3 animate-spin" />
+          )}
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem 
+          onClick={() => handleOperation(
+            () => testTriggerGoCardlessConnection(),
+            "GoCardless Connection Test"
+          )}
+          disabled={isLoading}
+          className="flex items-center justify-between"
+        >
+          <div className="flex items-center">
+            <Link2 className="mr-2 h-4 w-4" />
+            GoCardless Connection
+          </div>
+          {isLoading && activeOperation === "GoCardless Connection Test" && (
+            <Clock className="h-3 w-3 animate-spin" />
+          )}
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem 
+          onClick={() => handleOperation(
+            () => testTriggerBothProvidersConnection(),
+            "Both Providers Connection Test"
+          )}
+          disabled={isLoading}
+          className="flex items-center justify-between font-medium"
+        >
+          <div className="flex items-center">
+            <CreditCard className="mr-2 h-4 w-4" />
+            Both Connections
+          </div>
+          {isLoading && activeOperation === "Both Providers Connection Test" && (
+            <Clock className="h-3 w-3 animate-spin" />
+          )}
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
         <div className="px-2 py-1.5 text-xs text-muted-foreground">
           ⚡ Tasks run async in background
           <br />
           📊 Monitor in Trigger.dev Dashboard
+          <br />
+          🔗 Connection tests use mock data
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

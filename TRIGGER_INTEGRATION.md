@@ -274,7 +274,8 @@ I've added a **"Test Trigger.dev"** button to your Financial Accounts page that 
 ### **Location**: `/dashboard/financial` 
 ### **Features**:
 - ⚡ **Transaction Import Tests**: Test Plaid, GoCardless, or both providers (7-30 days)
-- 🔄 **Balance Sync Tests**: Test balance syncing for individual or both providers  
+- 🔄 **Balance Sync Tests**: Test balance syncing for individual or both providers
+- 🔗 **Bank Connection Tests**: Test async connection flows with mock data (NEW!)
 - 📊 **Real-time Feedback**: Shows task IDs and links to Trigger.dev dashboard
 - 🎯 **Loading States**: Visual feedback for each operation
 - 🔗 **Dashboard Links**: Direct links to monitor tasks in Trigger.dev

@@ -22,6 +22,11 @@ A **comprehensive test button** on your Financial Accounts page that lets you te
 - **GoCardless Balances**: Tests GoCardless account balance sync
 - **Both Providers**: Tests both balance syncs in parallel
 
+### **Bank Connection Tests (Mock Data)**
+- **Plaid Connection**: Tests async Plaid account connection flow
+- **GoCardless Connection**: Tests async GoCardless account connection flow
+- **Both Connections**: Tests both connection flows in parallel
+
 ## ✅ How to Test
 
 1. **Click** the "⚡ Test Trigger.dev" button
@@ -64,6 +69,12 @@ A **comprehensive test button** on your Financial Accounts page that lets you te
 - Verify you have connected accounts
 - Check date ranges (may be no transactions in selected period)
 - Confirm account mappings are correct
+
+### **For connection tests:**
+- These use **mock data** and won't create real bank connections
+- They test the async trigger.dev task execution flow
+- Use them to verify the connection tasks work without real bank auth
+- Real connections still need to go through Plaid Link/GoCardless auth flows
 
 ## 🔧 Behind the Scenes
 

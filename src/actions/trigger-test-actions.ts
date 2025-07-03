@@ -15,6 +15,9 @@ import {
   completeGoCardlessConnection
 } from "@/trigger/gocardless-tasks";
 
+import { getBankById } from "@/data/banks";
+import type { BankInfo } from "@/data/banks";
+
 async function getActiveFamilyId(): Promise<string | null> {
   const appUser = await getCurrentAppUser();
   return appUser?.familyMemberships[0]?.familyId || null;
@@ -230,5 +233,137 @@ export async function testTriggerBothProvidersBalanceSync() {
   } catch (error) {
     console.error("Error triggering both providers balance sync:", error);
     throw new Error(`Failed to trigger both providers balance sync: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+
+/**
+ * Test trigger.dev Plaid connection (with mock public token)
+ * NOTE: This uses a test public token for testing the async flow
+ */
+export async function testTriggerPlaidConnection() {
+  try {
+    const familyId = await getActiveFamilyId();
+    if (!familyId) {
+      throw new Error("User not authenticated or no family found");
+    }
+
+    // Mock public token for testing - in real usage this comes from Plaid Link
+    const mockPublicToken = "public-sandbox-test-token-" + Date.now();
+
+    const taskRun = await exchangePlaidPublicToken.trigger({
+      publicToken: mockPublicToken,
+      familyId,
+    });
+
+    return {
+      success: true,
+      taskId: taskRun.id,
+      message: `✅ Plaid connection test started (Task: ${taskRun.id})`,
+      url: `https://trigger.dev/dashboard/runs/${taskRun.id}`,
+      note: "Using mock public token for testing async flow",
+    };
+  } catch (error) {
+    console.error("Error triggering Plaid connection test:", error);
+    throw new Error(`Failed to trigger Plaid connection test: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+
+/**
+ * Test trigger.dev GoCardless connection (with mock data)
+ * NOTE: This uses mock bank and requisition data for testing the async flow
+ */
+export async function testTriggerGoCardlessConnection() {
+  try {
+    const familyId = await getActiveFamilyId();
+    if (!familyId) {
+      throw new Error("User not authenticated or no family found");
+    }
+
+    // Use real bank data for testing
+    const mockBank = getBankById("dnb");
+    if (!mockBank) {
+      throw new Error("Test bank not found - DNB bank should exist in banks data");
+    }
+
+    // Mock requisition ID for testing - in real usage this comes from GoCardless authorization
+    const mockRequisitionId = "req-test-" + Date.now();
+
+    const taskRun = await completeGoCardlessConnection.trigger({
+      requisitionId: mockRequisitionId,
+      bank: mockBank,
+      familyId,
+    });
+
+    return {
+      success: true,
+      taskId: taskRun.id,
+      message: `✅ GoCardless connection test started (Task: ${taskRun.id})`,
+      url: `https://trigger.dev/dashboard/runs/${taskRun.id}`,
+      note: "Using mock requisition data for testing async flow",
+    };
+  } catch (error) {
+    console.error("Error triggering GoCardless connection test:", error);
+    throw new Error(`Failed to trigger GoCardless connection test: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+
+/**
+ * Test triggering both provider connections in parallel
+ * NOTE: This uses mock data for testing the async connection flows
+ */
+export async function testTriggerBothProvidersConnection() {
+  try {
+    const familyId = await getActiveFamilyId();
+    if (!familyId) {
+      throw new Error("User not authenticated or no family found");
+    }
+
+    // Mock data for testing
+    const mockPublicToken = "public-sandbox-test-token-" + Date.now();
+    const mockRequisitionId = "req-test-" + Date.now();
+    const mockBank = getBankById("dnb");
+    if (!mockBank) {
+      throw new Error("Test bank not found - DNB bank should exist in banks data");
+    }
+
+    // Trigger both provider connections in parallel
+    const [plaidTaskRun, goCardlessTaskRun] = await Promise.allSettled([
+      exchangePlaidPublicToken.trigger({
+        publicToken: mockPublicToken,
+        familyId,
+      }),
+      completeGoCardlessConnection.trigger({
+        requisitionId: mockRequisitionId,
+        bank: mockBank,
+        familyId,
+      }),
+    ]);
+
+    const results = [];
+    
+    if (plaidTaskRun.status === "fulfilled") {
+      results.push(`Plaid: ${plaidTaskRun.value.id}`);
+    } else {
+      results.push(`Plaid: Failed - ${plaidTaskRun.reason}`);
+    }
+    
+    if (goCardlessTaskRun.status === "fulfilled") {
+      results.push(`GoCardless: ${goCardlessTaskRun.value.id}`);
+    } else {
+      results.push(`GoCardless: Failed - ${goCardlessTaskRun.reason}`);
+    }
+
+    return {
+      success: true,
+      message: `✅ Both provider connections triggered: ${results.join(", ")}`,
+      results: {
+        plaid: plaidTaskRun.status === "fulfilled" ? plaidTaskRun.value.id : null,
+        gocardless: goCardlessTaskRun.status === "fulfilled" ? goCardlessTaskRun.value.id : null,
+      },
+      note: "Using mock data for testing async connection flows",
+    };
+  } catch (error) {
+    console.error("Error triggering both provider connections:", error);
+    throw new Error(`Failed to trigger both provider connections: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
