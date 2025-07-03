@@ -19,6 +19,7 @@ I've created trigger.dev task implementations for both Plaid and GoCardless:
 
 - ✅ `src/trigger/plaid-tasks.ts` - Plaid operations
 - ✅ `src/trigger/gocardless-tasks.ts` - GoCardless operations
+- ✅ **Schema Fixed**: Corrected GoCardless to use proper `BankConnection` → `ConnectedAccount` hierarchy
 
 ## Available Tasks
 
@@ -127,7 +128,15 @@ cron: "0 2 * * 0"
 
 ## Integration Steps
 
-### 1. Fix Import Issues
+### 1. Schema Structure (FIXED ✅)
+
+**Issue**: The original implementation incorrectly used `ConnectedAccount` for both the bank connection and individual accounts.
+
+**Solution**: Now properly uses the hierarchical schema:
+- `BankConnection` - Overall connection to GoCardless (equivalent to Plaid's `PlaidItem`)
+- `ConnectedAccount` - Individual accounts within that connection (equivalent to Plaid's `PlaidAccount`)
+
+### 2. Fix Import Issues
 
 The trigger files have some import path issues that need to be resolved:
 
@@ -139,7 +148,7 @@ npm run db:generate
 # import { PrismaClient, AccountType } from "@prisma/client";
 ```
 
-### 2. Update Your Existing Actions
+### 3. Update Your Existing Actions
 
 Replace direct function calls with trigger.dev task triggers:
 
@@ -174,7 +183,7 @@ export async function exchangePublicToken(publicToken: string) {
 }
 ```
 
-### 3. Update UI Components
+### 4. Update UI Components
 
 Handle the async nature in your UI:
 
@@ -199,7 +208,7 @@ const handleConnect = async (publicToken: string) => {
 };
 ```
 
-### 4. Environment Variables
+### 5. Environment Variables
 
 Ensure all required environment variables are set:
 
@@ -216,7 +225,7 @@ GOCARDLESS_SECRET_KEY=your_gocardless_secret_key
 TRIGGER_SECRET_KEY=your_trigger_secret_key
 ```
 
-### 5. Deploy Trigger Functions
+### 6. Deploy Trigger Functions
 
 Deploy your trigger functions:
 
@@ -260,10 +269,11 @@ curl -X POST http://localhost:3040/api/trigger \
 
 ## Next Steps
 
-1. **Fix Import Paths**: Resolve the Prisma and trigger.dev import issues
-2. **Update Actions**: Replace synchronous calls with trigger.dev tasks
-3. **Update UI**: Handle async operations in your frontend
-4. **Deploy**: Deploy trigger functions to production
-5. **Monitor**: Set up alerts and monitoring
+1. ✅ **Schema Structure**: Fixed GoCardless to use proper BankConnection → ConnectedAccount hierarchy
+2. **Fix Import Paths**: Resolve the Prisma and trigger.dev import issues
+3. **Update Actions**: Replace synchronous calls with trigger.dev tasks
+4. **Update UI**: Handle async operations in your frontend
+5. **Deploy**: Deploy trigger functions to production
+6. **Monitor**: Set up alerts and monitoring
 
 This architecture will make your financial data operations much more robust, scalable, and user-friendly!

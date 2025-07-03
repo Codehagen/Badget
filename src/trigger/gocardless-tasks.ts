@@ -313,12 +313,15 @@ export const completeGoCardlessConnection = task({
       });
 
       // Create bank connection record
-      const bankConnection = await prisma.connectedAccount.create({
+      const bankConnection = await prisma.bankConnection.create({
         data: {
           provider: "GOCARDLESS",
           accessToken: requisitionId, // For GoCardless, we use requisition ID as access token
+          itemId: requisitionId,
           familyId,
           institutionId: bank.institutionId?.gocardless || null,
+          institutionName: bank.displayName,
+          institutionCountry: bank.country,
         },
       });
 
@@ -454,15 +457,22 @@ export const importGoCardlessTransactions = task({
 
     try {
       // Get all GoCardless connections for this family
-      const connections = await prisma.connectedAccount.findMany({
+      const bankConnections = await prisma.bankConnection.findMany({
         where: {
           familyId,
           provider: "GOCARDLESS",
         },
         include: {
-          financialAccount: true,
+          connectedAccounts: {
+            include: {
+              financialAccount: true,
+            },
+          },
         },
       });
+
+      // Flatten to get all connected accounts
+      const connections = bankConnections.flatMap((bc: any) => bc.connectedAccounts);
 
       if (connections.length === 0) {
         throw new Error("No GoCardless accounts connected");
@@ -559,15 +569,22 @@ export const syncGoCardlessBalances = task({
 
     try {
       // Get all GoCardless connections for this family
-      const connections = await prisma.connectedAccount.findMany({
+      const bankConnections = await prisma.bankConnection.findMany({
         where: {
           familyId,
           provider: "GOCARDLESS",
         },
         include: {
-          financialAccount: true,
+          connectedAccounts: {
+            include: {
+              financialAccount: true,
+            },
+          },
         },
       });
+
+      // Flatten to get all connected accounts
+      const connections = bankConnections.flatMap((bc: any) => bc.connectedAccounts);
 
       logger.log("Found GoCardless connections for balance sync", { 
         connectionCount: connections.length 
@@ -724,7 +741,7 @@ export const scheduledGoCardlessBalanceSync = schedules.task({
       // Get all families with GoCardless connections
       const familiesWithGoCardless = await prisma.family.findMany({
         where: {
-          connectedAccounts: {
+          BankConnection: {
             some: {
               provider: "GOCARDLESS",
             },
@@ -776,7 +793,7 @@ export const scheduledGoCardlessTransactionImport = schedules.task({
       // Get all families with GoCardless connections
       const familiesWithGoCardless = await prisma.family.findMany({
         where: {
-          connectedAccounts: {
+          BankConnection: {
             some: {
               provider: "GOCARDLESS",
             },
