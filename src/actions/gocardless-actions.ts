@@ -132,7 +132,7 @@ async function generateAccessToken(): Promise<string> {
     const response = await fetch(`${GOCARDLESS_API_BASE}/token/new/`, {
       method: "POST",
       headers: {
-        "accept": "application/json",
+        accept: "application/json",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -143,56 +143,73 @@ async function generateAccessToken(): Promise<string> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Token generation failed: ${response.status} ${errorText}`);
+      throw new Error(
+        `Token generation failed: ${response.status} ${errorText}`
+      );
     }
 
     const tokenData: TokenResponse = await response.json();
     return tokenData.access;
   } catch (error) {
     console.error("Error generating GoCardless access token:", error);
-    throw new Error(`Failed to generate access token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to generate access token: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
 /**
  * Get institutions by country (Step 2)
  */
-export async function getGoCardlessInstitutions(countryCode: string): Promise<Institution[]> {
+export async function getGoCardlessInstitutions(
+  countryCode: string,
+  accessToken?: string
+): Promise<Institution[]> {
   try {
-    const accessToken = await generateAccessToken();
-    
-    const response = await fetch(`${GOCARDLESS_API_BASE}/institutions/?country=${countryCode}`, {
-      method: "GET",
-      headers: {
-        "accept": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-      },
-    });
+    const token = accessToken || (await generateAccessToken());
+
+    const response = await fetch(
+      `${GOCARDLESS_API_BASE}/institutions/?country=${countryCode}`,
+      {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to fetch institutions: ${response.status} ${errorText}`);
+      throw new Error(
+        `Failed to fetch institutions: ${response.status} ${errorText}`
+      );
     }
 
     const institutions: Institution[] = await response.json();
     return institutions;
   } catch (error) {
     console.error("Error fetching GoCardless institutions:", error);
-    throw new Error(`Failed to fetch institutions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to fetch institutions: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
 /**
  * Create end user agreement (Step 3)
  */
-async function createEndUserAgreement(institutionId: string, accessToken: string): Promise<Agreement> {
+async function createEndUserAgreement(
+  institutionId: string,
+  accessToken: string
+): Promise<Agreement> {
   try {
     const response = await fetch(`${GOCARDLESS_API_BASE}/agreements/enduser/`, {
       method: "POST",
       headers: {
-        "accept": "application/json",
+        accept: "application/json",
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         institution_id: institutionId,
@@ -204,21 +221,80 @@ async function createEndUserAgreement(institutionId: string, accessToken: string
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Agreement creation failed: ${response.status} ${errorText}`);
+      throw new Error(
+        `Agreement creation failed: ${response.status} ${errorText}`
+      );
     }
 
     const agreement: Agreement = await response.json();
     return agreement;
   } catch (error) {
     console.error("Error creating end user agreement:", error);
-    throw new Error(`Failed to create agreement: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to create agreement: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
+}
+
+/**
+ * Find GoCardless institution by bank name and country
+ */
+async function findGoCardlessInstitution(
+  bank: BankInfo,
+  accessToken: string
+): Promise<string | null> {
+  try {
+    // Get institutions for the bank's country using the provided access token
+    const institutions = await getGoCardlessInstitutions(
+      bank.country,
+      accessToken
+    );
+
+    // Try to find institution by exact name match first
+    let institution = institutions.find(
+      (inst) =>
+        inst.name.toLowerCase() === bank.name.toLowerCase() ||
+        inst.name.toLowerCase() === bank.displayName.toLowerCase()
+    );
+
+    // If not found, try partial matching
+    if (!institution) {
+      institution = institutions.find(
+        (inst) =>
+          inst.name.toLowerCase().includes(bank.name.toLowerCase()) ||
+          bank.name.toLowerCase().includes(inst.name.toLowerCase())
+      );
+    }
+
+    // For Norwegian banks, try specific mappings
+    if (!institution && bank.country === "NO") {
+      const norBankMappings: Record<string, string> = {
+        dnb: "DNB",
+        nordea: "Nordea",
+        sparebank1: "SpareBank 1",
+        handelsbanken: "Handelsbanken",
+      };
+
+      const searchTerm = norBankMappings[bank.id] || bank.name;
+      institution = institutions.find((inst) =>
+        inst.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return institution?.id || null;
+  } catch (error) {
+    console.error("Error finding GoCardless institution:", error);
+    return null;
   }
 }
 
 /**
  * Create a requisition (Step 4) - equivalent to Plaid's link token
  */
-export async function createGoCardlessRequisition(bank: BankInfo, redirectUrl: string = "http://localhost:3000/dashboard/financial") {
+export async function createGoCardlessRequisition(
+  bank: BankInfo,
+  redirectUrl: string = "http://localhost:3000/dashboard/financial"
+) {
   try {
     const appUser = await getCurrentAppUser();
     if (!appUser) {
@@ -230,27 +306,45 @@ export async function createGoCardlessRequisition(bank: BankInfo, redirectUrl: s
       throw new Error("No family found");
     }
 
-    if (!bank.institutionId?.gocardless) {
+    if (!bank.providers.includes("GOCARDLESS")) {
       throw new Error("Bank not supported by GoCardless");
     }
 
     // Step 1: Generate access token
     const accessToken = await generateAccessToken();
-    
+
+    // Step 2: Find the actual GoCardless institution ID
+    const institutionId = await findGoCardlessInstitution(bank, accessToken);
+
+    if (!institutionId) {
+      // If we can't find the institution, list available ones for debugging
+      const availableInstitutions = await getGoCardlessInstitutions(
+        bank.country
+      );
+      console.log(
+        `Available institutions for ${bank.country}:`,
+        availableInstitutions.map((i) => ({ id: i.id, name: i.name }))
+      );
+
+      throw new Error(
+        `Bank "${bank.displayName}" not found in GoCardless institutions for ${bank.country}. Please check available institutions.`
+      );
+    }
+
     // Step 3: Create end user agreement
-    const agreement = await createEndUserAgreement(bank.institutionId.gocardless, accessToken);
+    const agreement = await createEndUserAgreement(institutionId, accessToken);
 
     // Step 4: Create requisition
     const response = await fetch(`${GOCARDLESS_API_BASE}/requisitions/`, {
       method: "POST",
       headers: {
-        "accept": "application/json",
+        accept: "application/json",
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         redirect: redirectUrl,
-        institution_id: bank.institutionId.gocardless,
+        institution_id: institutionId,
         agreement: agreement.id,
         reference: `family-${familyId}-${Date.now()}`,
         user_language: "EN",
@@ -259,7 +353,9 @@ export async function createGoCardlessRequisition(bank: BankInfo, redirectUrl: s
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Requisition creation failed: ${response.status} ${errorText}`);
+      throw new Error(
+        `Requisition creation failed: ${response.status} ${errorText}`
+      );
     }
 
     const requisition: Requisition = await response.json();
@@ -268,30 +364,40 @@ export async function createGoCardlessRequisition(bank: BankInfo, redirectUrl: s
       success: true,
       requisitionId: requisition.id,
       authUrl: requisition.link,
-      institutionId: bank.institutionId.gocardless,
+      institutionId: institutionId,
       agreementId: agreement.id,
     };
   } catch (error) {
     console.error("Error creating GoCardless requisition:", error);
-    throw new Error(`Failed to create bank connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to create bank connection: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
 /**
  * Get account details from GoCardless API
  */
-async function getAccountDetails(accountId: string, accessToken: string): Promise<AccountDetails> {
-  const response = await fetch(`${GOCARDLESS_API_BASE}/accounts/${accountId}/details/`, {
-    method: "GET",
-    headers: {
-      "accept": "application/json",
-      "Authorization": `Bearer ${accessToken}`,
-    },
-  });
+async function getAccountDetails(
+  accountId: string,
+  accessToken: string
+): Promise<AccountDetails> {
+  const response = await fetch(
+    `${GOCARDLESS_API_BASE}/accounts/${accountId}/details/`,
+    {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to fetch account details: ${response.status} ${errorText}`);
+    throw new Error(
+      `Failed to fetch account details: ${response.status} ${errorText}`
+    );
   }
 
   const data = await response.json();
@@ -301,18 +407,26 @@ async function getAccountDetails(accountId: string, accessToken: string): Promis
 /**
  * Get account balances from GoCardless API
  */
-async function getAccountBalances(accountId: string, accessToken: string): Promise<{ balances: Balance[] }> {
-  const response = await fetch(`${GOCARDLESS_API_BASE}/accounts/${accountId}/balances/`, {
-    method: "GET",
-    headers: {
-      "accept": "application/json",
-      "Authorization": `Bearer ${accessToken}`,
-    },
-  });
+async function getAccountBalances(
+  accountId: string,
+  accessToken: string
+): Promise<{ balances: Balance[] }> {
+  const response = await fetch(
+    `${GOCARDLESS_API_BASE}/accounts/${accountId}/balances/`,
+    {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to fetch account balances: ${response.status} ${errorText}`);
+    throw new Error(
+      `Failed to fetch account balances: ${response.status} ${errorText}`
+    );
   }
 
   return await response.json();
@@ -321,13 +435,20 @@ async function getAccountBalances(accountId: string, accessToken: string): Promi
 /**
  * Get account transactions from GoCardless API
  */
-async function getAccountTransactions(accountId: string, accessToken: string, dateFrom?: string, dateTo?: string): Promise<{ transactions: { booked: Transaction[], pending: Transaction[] } }> {
+async function getAccountTransactions(
+  accountId: string,
+  accessToken: string,
+  dateFrom?: string,
+  dateTo?: string
+): Promise<{
+  transactions: { booked: Transaction[]; pending: Transaction[] };
+}> {
   let url = `${GOCARDLESS_API_BASE}/accounts/${accountId}/transactions/`;
   const params = new URLSearchParams();
-  
-  if (dateFrom) params.append('date_from', dateFrom);
-  if (dateTo) params.append('date_to', dateTo);
-  
+
+  if (dateFrom) params.append("date_from", dateFrom);
+  if (dateTo) params.append("date_to", dateTo);
+
   if (params.toString()) {
     url += `?${params.toString()}`;
   }
@@ -335,14 +456,16 @@ async function getAccountTransactions(accountId: string, accessToken: string, da
   const response = await fetch(url, {
     method: "GET",
     headers: {
-      "accept": "application/json",
-      "Authorization": `Bearer ${accessToken}`,
+      accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
     },
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to fetch account transactions: ${response.status} ${errorText}`);
+    throw new Error(
+      `Failed to fetch account transactions: ${response.status} ${errorText}`
+    );
   }
 
   return await response.json();
@@ -351,7 +474,10 @@ async function getAccountTransactions(accountId: string, accessToken: string, da
 /**
  * Complete GoCardless connection after user authorization (Step 5 & 6)
  */
-export async function completeGoCardlessConnection(requisitionId: string, bank: BankInfo) {
+export async function completeGoCardlessConnection(
+  requisitionId: string,
+  bank: BankInfo
+) {
   const familyId = await getActiveFamilyId();
   if (!familyId) {
     throw new Error("User not authenticated or no family found");
@@ -364,23 +490,31 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
     const accessToken = await generateAccessToken();
 
     // Step 5: Get requisition details to check status and get account IDs
-    const response = await fetch(`${GOCARDLESS_API_BASE}/requisitions/${requisitionId}/`, {
-      method: "GET",
-      headers: {
-        "accept": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-      },
-    });
+    const response = await fetch(
+      `${GOCARDLESS_API_BASE}/requisitions/${requisitionId}/`,
+      {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to fetch requisition: ${response.status} ${errorText}`);
+      throw new Error(
+        `Failed to fetch requisition: ${response.status} ${errorText}`
+      );
     }
 
     const requisition: Requisition = await response.json();
-    
-    if (requisition.status !== "LN") { // LN = Linked
-      throw new Error(`Bank connection not completed. Status: ${requisition.status}`);
+
+    if (requisition.status !== "LN") {
+      // LN = Linked
+      throw new Error(
+        `Bank connection not completed. Status: ${requisition.status}`
+      );
     }
 
     if (!requisition.accounts || requisition.accounts.length === 0) {
@@ -408,23 +542,32 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
       try {
         // Get account details
         const accountDetails = await getAccountDetails(accountId, accessToken);
-        
+
         // Get account balances
-        const accountBalances = await getAccountBalances(accountId, accessToken);
+        const accountBalances = await getAccountBalances(
+          accountId,
+          accessToken
+        );
 
         // Map GoCardless account type to our AccountType enum
         const getAccountType = (details: AccountDetails): AccountType => {
           const usage = details.usage?.toLowerCase();
           const product = details.product?.toLowerCase();
           const cashAccountType = details.cashAccountType?.toLowerCase();
-          
+
           if (usage === "priv" || cashAccountType === "cacc") {
             return AccountType.CHECKING;
           } else if (usage === "orga" || product?.includes("business")) {
             return AccountType.CHECKING; // Business checking
-          } else if (product?.includes("savings") || cashAccountType === "svgs") {
+          } else if (
+            product?.includes("savings") ||
+            cashAccountType === "svgs"
+          ) {
             return AccountType.SAVINGS;
-          } else if (product?.includes("credit") || cashAccountType === "card") {
+          } else if (
+            product?.includes("credit") ||
+            cashAccountType === "card"
+          ) {
             return AccountType.CREDIT_CARD;
           } else if (product?.includes("loan")) {
             return AccountType.LOAN;
@@ -435,28 +578,44 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
         };
 
         const accountType = getAccountType(accountDetails);
-        
+
         // Get current balance (prefer interimAvailable, then closingBooked)
         const balances = accountBalances.balances || [];
-        const availableBalance = balances.find((b: Balance) => b.balanceType === "interimAvailable");
-        const currentBalance = availableBalance || balances.find((b: Balance) => b.balanceType === "closingBooked") || balances[0];
-        
-        const balance = currentBalance?.balanceAmount?.amount ? 
-          parseFloat(currentBalance.balanceAmount.amount) : 0;
-        
-        const currency = currentBalance?.balanceAmount?.currency || accountDetails.currency || "EUR";
+        const availableBalance = balances.find(
+          (b: Balance) => b.balanceType === "interimAvailable"
+        );
+        const currentBalance =
+          availableBalance ||
+          balances.find((b: Balance) => b.balanceType === "closingBooked") ||
+          balances[0];
+
+        const balance = currentBalance?.balanceAmount?.amount
+          ? parseFloat(currentBalance.balanceAmount.amount)
+          : 0;
+
+        const currency =
+          currentBalance?.balanceAmount?.currency ||
+          accountDetails.currency ||
+          "EUR";
 
         // Create financial account
         const financialAccount = await prisma.financialAccount.create({
           data: {
-            name: accountDetails.displayName || accountDetails.name || 
-                  (accountDetails.iban ? `${bank.displayName} ****${accountDetails.iban.slice(-4)}` : `${bank.displayName} Account`),
+            name:
+              accountDetails.displayName ||
+              accountDetails.name ||
+              (accountDetails.iban
+                ? `${bank.displayName} ****${accountDetails.iban.slice(-4)}`
+                : `${bank.displayName} Account`),
             type: accountType,
             balance,
             currency,
             institution: bank.displayName,
-            accountNumber: accountDetails.iban ? `****${accountDetails.iban.slice(-4)}` : 
-                          accountDetails.bban ? `****${accountDetails.bban.slice(-4)}` : null,
+            accountNumber: accountDetails.iban
+              ? `****${accountDetails.iban.slice(-4)}`
+              : accountDetails.bban
+                ? `****${accountDetails.bban.slice(-4)}`
+                : null,
             familyId,
           },
         });
@@ -465,8 +624,14 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
         await prisma.connectedAccount.create({
           data: {
             providerAccountId: accountId,
-            accountName: accountDetails.displayName || accountDetails.name || financialAccount.name,
-            accountType: accountDetails.usage || accountDetails.cashAccountType || "current",
+            accountName:
+              accountDetails.displayName ||
+              accountDetails.name ||
+              financialAccount.name,
+            accountType:
+              accountDetails.usage ||
+              accountDetails.cashAccountType ||
+              "current",
             accountSubtype: accountDetails.product || null,
             iban: accountDetails.iban || null,
             connectionId: bankConnection.id,
@@ -496,7 +661,9 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
     };
   } catch (error) {
     console.error("Error completing GoCardless connection:", error);
-    throw new Error(`Failed to complete bank connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to complete bank connection: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   } finally {
     await prisma.$disconnect();
   }
@@ -505,7 +672,10 @@ export async function completeGoCardlessConnection(requisitionId: string, bank: 
 /**
  * Import transactions from GoCardless accounts
  */
-export async function importGoCardlessTransactions(startDate?: Date, endDate?: Date) {
+export async function importGoCardlessTransactions(
+  startDate?: Date,
+  endDate?: Date
+) {
   const familyId = await getActiveFamilyId();
   if (!familyId) {
     throw new Error("User not authenticated or no family found");
@@ -519,9 +689,9 @@ export async function importGoCardlessTransactions(startDate?: Date, endDate?: D
 
     // Get all GoCardless connections for this family
     const connections = await prisma.bankConnection.findMany({
-      where: { 
+      where: {
         familyId,
-        provider: "GOCARDLESS"
+        provider: "GOCARDLESS",
       },
       include: {
         connectedAccounts: {
@@ -544,34 +714,49 @@ export async function importGoCardlessTransactions(startDate?: Date, endDate?: D
 
         try {
           // Get transactions from GoCardless API
-          const dateFrom = startDate?.toISOString().split('T')[0];
-          const dateTo = endDate?.toISOString().split('T')[0];
+          const dateFrom = startDate?.toISOString().split("T")[0];
+          const dateTo = endDate?.toISOString().split("T")[0];
 
           const transactionData = await getAccountTransactions(
-            connectedAccount.providerAccountId, 
-            accessToken, 
-            dateFrom, 
+            connectedAccount.providerAccountId,
+            accessToken,
+            dateFrom,
             dateTo
           );
 
           // Process booked transactions
           const bookedTransactions = transactionData.transactions?.booked || [];
-          const pendingTransactions = transactionData.transactions?.pending || [];
+          const pendingTransactions =
+            transactionData.transactions?.pending || [];
 
           // Process booked transactions
           for (const transaction of bookedTransactions) {
-            await processGoCardlessTransaction(transaction, connectedAccount, familyId, false, prisma);
+            await processGoCardlessTransaction(
+              transaction,
+              connectedAccount,
+              familyId,
+              false,
+              prisma
+            );
             totalTransactions++;
           }
 
           // Process pending transactions
           for (const transaction of pendingTransactions) {
-            await processGoCardlessTransaction(transaction, connectedAccount, familyId, true, prisma);
+            await processGoCardlessTransaction(
+              transaction,
+              connectedAccount,
+              familyId,
+              true,
+              prisma
+            );
             totalTransactions++;
           }
-
         } catch (accountError) {
-          console.warn(`Failed to import transactions for account ${connectedAccount.providerAccountId}:`, accountError);
+          console.warn(
+            `Failed to import transactions for account ${connectedAccount.providerAccountId}:`,
+            accountError
+          );
           // Continue with other accounts
         }
       }
@@ -584,7 +769,9 @@ export async function importGoCardlessTransactions(startDate?: Date, endDate?: D
     };
   } catch (error) {
     console.error("Error importing GoCardless transactions:", error);
-    throw new Error(`Failed to import transactions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to import transactions: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   } finally {
     await prisma.$disconnect();
   }
@@ -594,14 +781,15 @@ export async function importGoCardlessTransactions(startDate?: Date, endDate?: D
  * Process a single GoCardless transaction
  */
 async function processGoCardlessTransaction(
-  transaction: Transaction, 
-  connectedAccount: any, 
-  familyId: string, 
+  transaction: Transaction,
+  connectedAccount: any,
+  familyId: string,
   isPending: boolean,
   prisma: PrismaClient
 ) {
   // Create unique transaction ID for GoCardless
-  const transactionId = transaction.transactionId || 
+  const transactionId =
+    transaction.transactionId ||
     `${connectedAccount.providerAccountId}-${transaction.bookingDate || transaction.valueDate}-${transaction.transactionAmount?.amount}-${Math.random()}`;
 
   // Check if transaction already exists
@@ -619,23 +807,29 @@ async function processGoCardlessTransaction(
   const transactionType = amount < 0 ? "EXPENSE" : "INCOME";
 
   // Extract merchant/counterparty name
-  const merchant = transaction.creditorName || 
-                  transaction.debtorName || 
-                  transaction.remittanceInformationUnstructured?.split(' ')[0] ||
-                  "Unknown";
+  const merchant =
+    transaction.creditorName ||
+    transaction.debtorName ||
+    transaction.remittanceInformationUnstructured?.split(" ")[0] ||
+    "Unknown";
 
   // Extract description
-  const description = transaction.remittanceInformationUnstructured || 
-                     transaction.remittanceInformationStructured ||
-                     transaction.additionalInformation ||
-                     (transaction.creditorName ? `Payment to ${transaction.creditorName}` : 
-                      transaction.debtorName ? `Payment from ${transaction.debtorName}` : 
-                      "Transaction");
+  const description =
+    transaction.remittanceInformationUnstructured ||
+    transaction.remittanceInformationStructured ||
+    transaction.additionalInformation ||
+    (transaction.creditorName
+      ? `Payment to ${transaction.creditorName}`
+      : transaction.debtorName
+        ? `Payment from ${transaction.debtorName}`
+        : "Transaction");
 
   // Create transaction
   await prisma.transaction.create({
     data: {
-      date: new Date(transaction.bookingDate || transaction.valueDate || new Date()),
+      date: new Date(
+        transaction.bookingDate || transaction.valueDate || new Date()
+      ),
       description: description.substring(0, 255), // Ensure it fits in DB
       merchant: merchant.substring(0, 100), // Ensure it fits in DB
       amount: Math.abs(amount),
@@ -650,9 +844,15 @@ async function processGoCardlessTransaction(
       // Store additional GoCardless data in tags
       tags: [
         `gocardless:${transactionId}`,
-        ...(transaction.bankTransactionCode ? [`code:${transaction.bankTransactionCode}`] : []),
-        ...(transaction.creditorAccount?.iban ? [`creditor:${transaction.creditorAccount.iban}`] : []),
-        ...(transaction.debtorAccount?.iban ? [`debtor:${transaction.debtorAccount.iban}`] : []),
+        ...(transaction.bankTransactionCode
+          ? [`code:${transaction.bankTransactionCode}`]
+          : []),
+        ...(transaction.creditorAccount?.iban
+          ? [`creditor:${transaction.creditorAccount.iban}`]
+          : []),
+        ...(transaction.debtorAccount?.iban
+          ? [`debtor:${transaction.debtorAccount.iban}`]
+          : []),
         ...(transaction.endToEndId ? [`e2e:${transaction.endToEndId}`] : []),
         ...(transaction.mandateId ? [`mandate:${transaction.mandateId}`] : []),
       ],
@@ -677,9 +877,9 @@ export async function syncGoCardlessBalances() {
 
     // Get all GoCardless connections
     const connections = await prisma.bankConnection.findMany({
-      where: { 
+      where: {
         familyId,
-        provider: "GOCARDLESS"
+        provider: "GOCARDLESS",
       },
       include: {
         connectedAccounts: {
@@ -697,29 +897,42 @@ export async function syncGoCardlessBalances() {
         if (!connectedAccount.financialAccount) continue;
 
         try {
-          const balanceData = await getAccountBalances(connectedAccount.providerAccountId, accessToken);
+          const balanceData = await getAccountBalances(
+            connectedAccount.providerAccountId,
+            accessToken
+          );
 
           const balances = balanceData.balances || [];
-          
+
           // Prefer interimAvailable balance, then closingBooked
-          const availableBalance = balances.find((b: Balance) => b.balanceType === "interimAvailable");
-          const currentBalance = availableBalance || balances.find((b: Balance) => b.balanceType === "closingBooked") || balances[0];
+          const availableBalance = balances.find(
+            (b: Balance) => b.balanceType === "interimAvailable"
+          );
+          const currentBalance =
+            availableBalance ||
+            balances.find((b: Balance) => b.balanceType === "closingBooked") ||
+            balances[0];
 
           if (currentBalance?.balanceAmount?.amount !== undefined) {
             const balance = parseFloat(currentBalance.balanceAmount.amount);
-            
+
             await prisma.financialAccount.update({
               where: { id: connectedAccount.financialAccount.id },
               data: {
                 balance,
-                currency: currentBalance.balanceAmount.currency || connectedAccount.financialAccount.currency,
+                currency:
+                  currentBalance.balanceAmount.currency ||
+                  connectedAccount.financialAccount.currency,
               },
             });
 
             accountsUpdated++;
           }
         } catch (accountError) {
-          console.warn(`Failed to sync balance for account ${connectedAccount.providerAccountId}:`, accountError);
+          console.warn(
+            `Failed to sync balance for account ${connectedAccount.providerAccountId}:`,
+            accountError
+          );
         }
       }
     }
@@ -731,7 +944,9 @@ export async function syncGoCardlessBalances() {
     };
   } catch (error) {
     console.error("Error syncing GoCardless balances:", error);
-    throw new Error(`Failed to sync account balances: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to sync account balances: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   } finally {
     await prisma.$disconnect();
   }
