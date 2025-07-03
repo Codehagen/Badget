@@ -1,0 +1,139 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { completeGoCardlessConnection } from "@/actions/gocardless-actions";
+import { toast } from "sonner";
+import { Loader2, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export default function GoCardlessCallbackPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const handleCallback = async () => {
+      try {
+        // Get requisition ID from URL parameters
+        const requisitionId = searchParams.get("ref");
+        const error = searchParams.get("error");
+        
+        if (error) {
+          throw new Error(`Authorization failed: ${error}`);
+        }
+
+        if (!requisitionId) {
+          throw new Error("Missing requisition ID in callback");
+        }
+
+        setMessage("Completing bank connection...");
+
+        // Get bank info from localStorage (set during the initial request)
+        const bankInfoStr = localStorage.getItem(`gocardless_bank_${requisitionId}`);
+        if (!bankInfoStr) {
+          throw new Error("Bank information not found. Please try connecting again.");
+        }
+
+        const bankInfo = JSON.parse(bankInfoStr);
+
+        // Complete the connection
+        const result = await completeGoCardlessConnection(requisitionId, bankInfo);
+
+        if (result.success) {
+          setStatus("success");
+          setMessage(`Successfully connected ${result.accounts.length} accounts from ${bankInfo.displayName}`);
+          toast.success(result.message);
+          
+          // Clean up localStorage
+          localStorage.removeItem(`gocardless_bank_${requisitionId}`);
+          
+          // Redirect to financial page after a short delay
+          setTimeout(() => {
+            router.push("/dashboard/financial");
+          }, 2000);
+        } else {
+          throw new Error("Failed to complete bank connection");
+        }
+      } catch (error) {
+        console.error("GoCardless callback error:", error);
+        setStatus("error");
+        setMessage(error instanceof Error ? error.message : "An unexpected error occurred");
+        toast.error("Failed to connect bank account");
+      }
+    };
+
+    handleCallback();
+  }, [searchParams, router]);
+
+  const handleRetry = () => {
+    router.push("/dashboard/financial");
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="max-w-md w-full mx-auto p-6">
+        <div className="text-center space-y-6">
+          {/* Status Icon */}
+          <div className="flex justify-center">
+            {status === "loading" && (
+              <Loader2 className="h-16 w-16 text-blue-500 animate-spin" />
+            )}
+            {status === "success" && (
+              <CheckCircle className="h-16 w-16 text-green-500" />
+            )}
+            {status === "error" && (
+              <XCircle className="h-16 w-16 text-red-500" />
+            )}
+          </div>
+
+          {/* Status Title */}
+          <div>
+            <h1 className="text-2xl font-bold mb-2">
+              {status === "loading" && "Connecting Your Bank Account"}
+              {status === "success" && "Bank Account Connected!"}
+              {status === "error" && "Connection Failed"}
+            </h1>
+            
+            <p className="text-muted-foreground">
+              {message}
+            </p>
+          </div>
+
+          {/* Action Button */}
+          {status === "error" && (
+            <div className="space-y-3">
+              <Button onClick={handleRetry} className="w-full">
+                Try Again
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                If the problem persists, please contact support.
+              </p>
+            </div>
+          )}
+
+          {status === "success" && (
+            <div className="space-y-3">
+              <p className="text-sm text-green-600">
+                Redirecting you back to your financial dashboard...
+              </p>
+              <Button onClick={() => router.push("/dashboard/financial")} variant="outline">
+                Go to Dashboard Now
+              </Button>
+            </div>
+          )}
+
+          {status === "loading" && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <AlertCircle className="h-4 w-4" />
+                Please don't close this page
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

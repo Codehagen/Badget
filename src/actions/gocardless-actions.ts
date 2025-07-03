@@ -293,7 +293,7 @@ async function findGoCardlessInstitution(
  */
 export async function createGoCardlessRequisition(
   bank: BankInfo,
-  redirectUrl: string = "http://localhost:3000/dashboard/financial"
+  redirectUrl: string = "http://localhost:3000/dashboard/financial/callback"
 ) {
   try {
     const appUser = await getCurrentAppUser();
@@ -342,13 +342,13 @@ export async function createGoCardlessRequisition(
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({
-        redirect: redirectUrl,
-        institution_id: institutionId,
-        agreement: agreement.id,
-        reference: `family-${familyId}-${Date.now()}`,
-        user_language: "EN",
-      }),
+              body: JSON.stringify({
+          redirect: redirectUrl,
+          institution_id: institutionId,
+          agreement: agreement.id,
+          reference: `family-${familyId}-${Date.now()}`,
+          user_language: "EN",
+        }),
     });
 
     if (!response.ok) {

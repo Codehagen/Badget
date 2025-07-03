@@ -130,6 +130,12 @@ export function PlaidLinkModal({ onSuccess }: BankConnectionModalProps) {
       else if (selectedBank.providers.includes("GOCARDLESS")) {
         const result = await createGoCardlessRequisition(selectedBank);
         if (result.success) {
+          // Store bank info in localStorage for the callback
+          localStorage.setItem(
+            `gocardless_bank_${result.requisitionId}`,
+            JSON.stringify(selectedBank)
+          );
+          
           // Redirect to GoCardless authorization
           window.location.href = result.authUrl;
         } else {
