@@ -267,13 +267,33 @@ curl -X POST http://localhost:3040/api/trigger \
   -d '{"taskId": "import-plaid-transactions", "payload": {"familyId": "test-family"}}'
 ```
 
+## Test Button Added ✅
+
+I've added a **"Test Trigger.dev"** button to your Financial Accounts page that allows you to test all the trigger.dev functions:
+
+### **Location**: `/dashboard/financial` 
+### **Features**:
+- ⚡ **Transaction Import Tests**: Test Plaid, GoCardless, or both providers (7-30 days)
+- 🔄 **Balance Sync Tests**: Test balance syncing for individual or both providers  
+- 📊 **Real-time Feedback**: Shows task IDs and links to Trigger.dev dashboard
+- 🎯 **Loading States**: Visual feedback for each operation
+- 🔗 **Dashboard Links**: Direct links to monitor tasks in Trigger.dev
+
+### **How to Test**:
+1. Navigate to `/dashboard/financial`
+2. Click the **"⚡ Test Trigger.dev"** button (next to Import Transactions)
+3. Choose any test operation from the dropdown
+4. Watch the toast notifications for task IDs and dashboard links
+5. Monitor progress in the Trigger.dev dashboard
+
 ## Next Steps
 
 1. ✅ **Schema Structure**: Fixed GoCardless to use proper BankConnection → ConnectedAccount hierarchy
-2. **Fix Import Paths**: Resolve the Prisma and trigger.dev import issues
-3. **Update Actions**: Replace synchronous calls with trigger.dev tasks
-4. **Update UI**: Handle async operations in your frontend
-5. **Deploy**: Deploy trigger functions to production
-6. **Monitor**: Set up alerts and monitoring
+2. ✅ **Test Button**: Added comprehensive test interface on financial page
+3. **Fix Import Paths**: Resolve the Prisma and trigger.dev import issues
+4. **Update Actions**: Replace synchronous calls with trigger.dev tasks
+5. **Update UI**: Handle async operations in your frontend
+6. **Deploy**: Deploy trigger functions to production
+7. **Monitor**: Set up alerts and monitoring
 
 This architecture will make your financial data operations much more robust, scalable, and user-friendly!
