@@ -623,7 +623,7 @@ export async function completeGoCardlessConnection(
         });
 
         // Create connected account mapping
-        await prisma.connectedAccount.create({
+        const connectedAccount = await prisma.connectedAccount.create({
           data: {
             providerAccountId: accountId,
             accountName:
@@ -641,6 +641,40 @@ export async function completeGoCardlessConnection(
           },
         });
 
+        // Step 6c: Import initial transactions for this account
+        try {
+          const transactionData = await getAccountTransactions(accountId, accessToken);
+          
+          // Import booked transactions
+          if (transactionData.transactions.booked) {
+            for (const transaction of transactionData.transactions.booked) {
+              await processGoCardlessTransaction(
+                transaction,
+                { ...connectedAccount, financialAccount },
+                familyId,
+                false, // not pending
+                prisma
+              );
+            }
+          }
+
+          // Import pending transactions
+          if (transactionData.transactions.pending) {
+            for (const transaction of transactionData.transactions.pending) {
+              await processGoCardlessTransaction(
+                transaction,
+                { ...connectedAccount, financialAccount },
+                familyId,
+                true, // pending
+                prisma
+              );
+            }
+          }
+        } catch (transactionError) {
+          console.warn(`Failed to import transactions for account ${accountId}:`, transactionError);
+          // Continue with account creation even if transaction import fails
+        }
+
         createdAccounts.push({
           ...financialAccount,
           providerAccountId: accountId,
@@ -656,10 +690,19 @@ export async function completeGoCardlessConnection(
       throw new Error("No accounts could be processed successfully");
     }
 
+    // Count total transactions imported
+    const totalTransactions = await prisma.transaction.count({
+      where: {
+        accountId: {
+          in: createdAccounts.map(acc => acc.id)
+        }
+      }
+    });
+
     return {
       success: true,
       accounts: createdAccounts,
-      message: `Successfully connected ${createdAccounts.length} accounts via GoCardless`,
+      message: `Successfully connected ${createdAccounts.length} accounts and imported ${totalTransactions} transactions via GoCardless`,
     };
   } catch (error) {
     console.error("Error completing GoCardless connection:", error);
@@ -860,6 +903,95 @@ async function processGoCardlessTransaction(
       ],
     },
   });
+}
+
+/**
+ * Remove all GoCardless connections and accounts for testing
+ */
+export async function removeAllGoCardlessData() {
+  const familyId = await getActiveFamilyId();
+  if (!familyId) {
+    throw new Error("User not authenticated or no family found");
+  }
+
+  const prisma = getPrismaClient();
+
+  try {
+    // Get all GoCardless connections for this family
+    const connections = await prisma.bankConnection.findMany({
+      where: {
+        familyId,
+        provider: "GOCARDLESS",
+      },
+      include: {
+        connectedAccounts: {
+          include: {
+            financialAccount: {
+              include: {
+                transactions: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    let deletedAccounts = 0;
+    let deletedTransactions = 0;
+    let deletedConnections = 0;
+
+    for (const connection of connections) {
+      for (const connectedAccount of connection.connectedAccounts) {
+        if (connectedAccount.financialAccount) {
+          // Delete all transactions for this account
+          const transactionDeleteResult = await prisma.transaction.deleteMany({
+            where: {
+              accountId: connectedAccount.financialAccount.id,
+            },
+          });
+          deletedTransactions += transactionDeleteResult.count;
+
+          // Delete the financial account
+          await prisma.financialAccount.delete({
+            where: {
+              id: connectedAccount.financialAccount.id,
+            },
+          });
+          deletedAccounts++;
+        }
+      }
+
+      // Delete connected accounts
+      await prisma.connectedAccount.deleteMany({
+        where: {
+          connectionId: connection.id,
+        },
+      });
+
+      // Delete the bank connection
+      await prisma.bankConnection.delete({
+        where: {
+          id: connection.id,
+        },
+      });
+      deletedConnections++;
+    }
+
+    return {
+      success: true,
+      message: `Successfully removed ${deletedConnections} GoCardless connections, ${deletedAccounts} accounts, and ${deletedTransactions} transactions`,
+      deletedConnections,
+      deletedAccounts,
+      deletedTransactions,
+    };
+  } catch (error) {
+    console.error("Error removing GoCardless data:", error);
+    throw new Error(
+      `Failed to remove GoCardless data: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 /**

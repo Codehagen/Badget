@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Calendar, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import { importTransactions, syncAccountBalances, removeAllPlaidData } from "@/actions/plaid-actions";
+import { importGoCardlessTransactions, syncGoCardlessBalances, removeAllGoCardlessData } from "@/actions/gocardless-actions";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -36,15 +37,31 @@ export function TransactionImportButton({
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
       
-      const response = await importTransactions(startDate, endDate);
+      // Import from both Plaid and GoCardless
+      const plaidResponse = await importTransactions(startDate, endDate);
+      const goCardlessResponse = await importGoCardlessTransactions(startDate, endDate);
       
-      if (response.success) {
-        toast.success(response.message, {
+      let successCount = 0;
+      let totalMessage = "";
+      
+      if (plaidResponse.success) {
+        successCount++;
+        totalMessage += plaidResponse.message;
+      }
+      
+      if (goCardlessResponse.success) {
+        successCount++;
+        if (totalMessage) totalMessage += " | ";
+        totalMessage += goCardlessResponse.message;
+      }
+      
+      if (successCount > 0) {
+        toast.success(totalMessage || "Transactions imported successfully", {
           icon: <CheckCircle className="h-4 w-4" />,
         });
         onSuccess?.();
       } else {
-        throw new Error("Import failed");
+        throw new Error("Import failed for all providers");
       }
     } catch (error) {
       console.error("Error importing transactions:", error);
@@ -60,15 +77,31 @@ export function TransactionImportButton({
     try {
       setIsSyncing(true);
       
-      const response = await syncAccountBalances();
+      // Sync balances from both Plaid and GoCardless
+      const plaidResponse = await syncAccountBalances();
+      const goCardlessResponse = await syncGoCardlessBalances();
       
-      if (response.success) {
-        toast.success(response.message, {
+      let successCount = 0;
+      let totalMessage = "";
+      
+      if (plaidResponse.success) {
+        successCount++;
+        totalMessage += plaidResponse.message;
+      }
+      
+      if (goCardlessResponse.success) {
+        successCount++;
+        if (totalMessage) totalMessage += " | ";
+        totalMessage += goCardlessResponse.message;
+      }
+      
+      if (successCount > 0) {
+        toast.success(totalMessage || "Account balances synced successfully", {
           icon: <CheckCircle className="h-4 w-4" />,
         });
         onSuccess?.();
       } else {
-        throw new Error("Sync failed");
+        throw new Error("Sync failed for all providers");
       }
     } catch (error) {
       console.error("Error syncing balances:", error);
@@ -101,6 +134,34 @@ export function TransactionImportButton({
     } catch (error) {
       console.error("Error removing Plaid data:", error);
       toast.error("Failed to remove Plaid data. Please try again.", {
+        icon: <AlertCircle className="h-4 w-4" />,
+      });
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
+  const handleRemoveAllGoCardlessData = async () => {
+    if (!confirm("Are you sure you want to remove ALL GoCardless connections and data? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setIsRemoving(true);
+      
+      const response = await removeAllGoCardlessData();
+      
+      if (response.success) {
+        toast.success(response.message, {
+          icon: <CheckCircle className="h-4 w-4" />,
+        });
+        onSuccess?.();
+      } else {
+        throw new Error("Remove failed");
+      }
+    } catch (error) {
+      console.error("Error removing GoCardless data:", error);
+      toast.error("Failed to remove GoCardless data. Please try again.", {
         icon: <AlertCircle className="h-4 w-4" />,
       });
     } finally {
@@ -165,6 +226,11 @@ export function TransactionImportButton({
         
         <DropdownMenuSeparator />
         
+        <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground">
+          Testing & Cleanup
+        </div>
+        <DropdownMenuSeparator />
+        
         <DropdownMenuItem 
           onClick={handleRemoveAllPlaidData}
           disabled={isLoading}
@@ -172,6 +238,15 @@ export function TransactionImportButton({
         >
           <Trash2 className="mr-2 h-4 w-4" />
           Remove All Plaid Data
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem 
+          onClick={handleRemoveAllGoCardlessData}
+          disabled={isLoading}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Remove All GoCardless Data
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
