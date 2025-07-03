@@ -1,6 +1,12 @@
 "use client";
 
-import { DonutChart } from "@tremor/react";
+import { Pie, PieChart } from "recharts";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface AccountBreakdownData {
   name: string;
@@ -24,56 +30,69 @@ const currencyFormatter = (number: number) => {
   }).format(number);
 };
 
+// Map account types to chart colors
+const chartConfig = {
+  amount: {
+    label: "Amount",
+  },
+  checking: {
+    label: "Checking",
+    color: "hsl(var(--chart-1))",
+  },
+  savings: {
+    label: "Savings",
+    color: "hsl(var(--chart-2))",
+  },
+  investment: {
+    label: "Investment",
+    color: "hsl(var(--chart-3))",
+  },
+  other: {
+    label: "Other",
+    color: "hsl(var(--chart-4))",
+  },
+} satisfies ChartConfig;
+
 export function AccountBreakdownChart({ data }: AccountBreakdownChartProps) {
-  // Convert data format for Tremor chart
+  // Convert data format for shadcn chart
   const chartData = data.map((item) => ({
-    name: item.name,
+    name: item.name.toLowerCase(),
     amount: item.value,
     share: item.share,
-    borderColor: item.borderColor,
+    fill: `var(--color-${item.name.toLowerCase()})`,
   }));
-
-  // Extract colors for the chart (Tremor accepts color names)
-  const colorMap: Record<string, string> = {
-    "#0066CC": "blue",
-    "#28A745": "green",
-    "#6F42C1": "purple",
-    "#FFC107": "yellow",
-    "#DC3545": "red",
-    "#17A2B8": "cyan",
-  };
-
-  const colors = data.map((item) => {
-    // Extract color from the data or fall back to default
-    const colorKey = Object.keys(colorMap).find(
-      (key) => item.borderColor?.includes(key) || false
-    );
-    return colorKey ? colorMap[colorKey] : "gray";
-  });
 
   return (
     <div className="grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-8">
-      <DonutChart
-        data={chartData}
-        category="amount"
-        index="name"
-        valueFormatter={currencyFormatter}
-        showTooltip={true}
-        className="h-40"
-        colors={
-          colors.length > 0 ? colors : ["blue", "green", "purple", "yellow"]
-        }
-      />
+      <ChartContainer
+        config={chartConfig}
+        className="mx-auto aspect-square max-h-[250px]"
+      >
+        <PieChart>
+          <ChartTooltip
+            cursor={false}
+            content={<ChartTooltipContent hideLabel />}
+          />
+          <Pie
+            data={chartData}
+            dataKey="amount"
+            nameKey="name"
+            stroke="hsl(var(--border))"
+            strokeWidth={2}
+          />
+        </PieChart>
+      </ChartContainer>
+
       <div className="flex items-center">
         <ul role="list" className="space-y-3">
-          {chartData.map((item) => (
+          {data.map((item) => (
             <li key={item.name} className="flex space-x-3">
               <span
                 className={classNames(item.borderColor, "w-1 shrink-0 rounded")}
               />
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  {currencyFormatter(item.amount)}{" "}
+                  {currencyFormatter(item.value)}{" "}
                   <span className="font-normal">({item.share})</span>
                 </p>
                 <p className="mt-0.5 whitespace-nowrap text-sm text-muted-foreground">
