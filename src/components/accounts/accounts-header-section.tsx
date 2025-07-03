@@ -2,6 +2,7 @@
 
 import { PlaidLinkModal } from "@/components/financial/plaid-link-modal";
 import { TransactionImportButton } from "@/components/financial/transaction-import-button";
+import { TriggerTestButton } from "@/components/financial/trigger-test-button";
 import { useRouter } from "next/navigation";
 
 export function AccountsHeaderSection() {
@@ -22,6 +23,7 @@ export function AccountsHeaderSection() {
         </p>
       </div>
       <div className="flex flex-col sm:flex-row gap-2">
+        <TriggerTestButton onSuccess={handleSuccess} />
         <TransactionImportButton onSuccess={handleSuccess} />
         <PlaidLinkModal onSuccess={handleSuccess} />
       </div>
