@@ -16,27 +16,36 @@ export default function GoCardlessCallbackPage() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get requisition ID from URL parameters
-        const requisitionId = searchParams.get("ref");
-        const error = searchParams.get("error");
-        
-        if (error) {
-          throw new Error(`Authorization failed: ${error}`);
-        }
-
-        if (!requisitionId) {
-          throw new Error("Missing requisition ID in callback");
-        }
-
         setMessage("Completing bank connection...");
-
-        // Get bank info from localStorage (set during the initial request)
-        const bankInfoStr = localStorage.getItem(`gocardless_bank_${requisitionId}`);
-        if (!bankInfoStr) {
-          throw new Error("Bank information not found. Please try connecting again.");
+        
+        // Get the current URL to extract requisition ID
+        const currentUrl = window.location.href;
+        const url = new URL(currentUrl);
+        
+        // The requisition ID should be stored in localStorage from when we initiated the flow
+        // We'll look for any stored requisition data
+        const storedRequisitions = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith('gocardless_bank_')) {
+            const requisitionId = key.replace('gocardless_bank_', '');
+            storedRequisitions.push({
+              id: requisitionId,
+              bankInfo: JSON.parse(localStorage.getItem(key) || '{}')
+            });
+          }
         }
-
-        const bankInfo = JSON.parse(bankInfoStr);
+        
+        if (storedRequisitions.length === 0) {
+          throw new Error("No pending bank connection found. Please try connecting again.");
+        }
+        
+        // For now, take the most recent one (you might want to be more specific)
+        const { id: requisitionId, bankInfo } = storedRequisitions[storedRequisitions.length - 1];
+        
+        if (!requisitionId) {
+          throw new Error("Missing requisition ID. Please try connecting again.");
+        }
 
         // Complete the connection
         const result = await completeGoCardlessConnection(requisitionId, bankInfo);

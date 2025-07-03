@@ -473,6 +473,7 @@ async function getAccountTransactions(
 
 /**
  * Complete GoCardless connection after user authorization (Step 5 & 6)
+ * Following the official GoCardless Bank Account Data API flow
  */
 export async function completeGoCardlessConnection(
   requisitionId: string,
@@ -486,11 +487,11 @@ export async function completeGoCardlessConnection(
   const prisma = getPrismaClient();
 
   try {
-    // Generate fresh access token
+    // Step 1: Generate fresh access token
     const accessToken = await generateAccessToken();
 
-    // Step 5: Get requisition details to check status and get account IDs
-    const response = await fetch(
+    // Step 5: List accounts - Get requisition details to check status and get account IDs
+    const requisitionResponse = await fetch(
       `${GOCARDLESS_API_BASE}/requisitions/${requisitionId}/`,
       {
         method: "GET",
@@ -501,19 +502,20 @@ export async function completeGoCardlessConnection(
       }
     );
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!requisitionResponse.ok) {
+      const errorText = await requisitionResponse.text();
       throw new Error(
-        `Failed to fetch requisition: ${response.status} ${errorText}`
+        `Failed to fetch requisition: ${requisitionResponse.status} ${errorText}`
       );
     }
 
-    const requisition: Requisition = await response.json();
+    const requisition: Requisition = await requisitionResponse.json();
 
+    // Check if the requisition is linked (user completed authentication)
     if (requisition.status !== "LN") {
       // LN = Linked
       throw new Error(
-        `Bank connection not completed. Status: ${requisition.status}`
+        `Bank connection not completed. Status: ${requisition.status}. Please try the bank connection again.`
       );
     }
 
@@ -535,15 +537,15 @@ export async function completeGoCardlessConnection(
       },
     });
 
-    // Step 6: Access account details, balances for each account
+    // Step 6: Access account details, balances and transactions for each account
     const createdAccounts = [];
 
     for (const accountId of requisition.accounts) {
       try {
-        // Get account details
+        // Step 6a: Get account details
         const accountDetails = await getAccountDetails(accountId, accessToken);
 
-        // Get account balances
+        // Step 6b: Get account balances
         const accountBalances = await getAccountBalances(
           accountId,
           accessToken
