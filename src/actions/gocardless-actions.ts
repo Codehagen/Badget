@@ -1,6 +1,6 @@
 "use server";
 
-import { PrismaClient, AccountType } from "@/generated/prisma";
+import { PrismaClient, AccountType, Prisma } from "@/generated/prisma";
 import { getCurrentAppUser } from "./user-actions";
 import type { BankInfo } from "@/data/banks";
 
@@ -67,7 +67,7 @@ interface AccountDetails {
   usage?: string;
   details?: string;
   ownerName?: string;
-  ownerAddressStructured?: any;
+  ownerAddressStructured?: Record<string, unknown>;
   ownerAddressUnstructured?: string;
 }
 
@@ -111,12 +111,27 @@ interface Transaction {
   ultimateCreditor?: string;
   ultimateDebtor?: string;
   purposeCode?: string;
-  exchangeRate?: any[];
-  currencyExchange?: any[];
+  exchangeRate?: Record<string, unknown>[];
+  currencyExchange?: Record<string, unknown>[];
 }
 
 function getPrismaClient() {
   return new PrismaClient();
+}
+
+function getBaseUrl(): string {
+  // For Vercel deployments
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  // Custom app URL environment variable
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+
+  // Fallback to localhost for development
+  return "http://localhost:3000";
 }
 
 async function getActiveFamilyId(): Promise<string | null> {
@@ -293,8 +308,10 @@ async function findGoCardlessInstitution(
  */
 export async function createGoCardlessRequisition(
   bank: BankInfo,
-  redirectUrl: string = "http://localhost:3000/dashboard/financial/callback"
+  redirectUrl?: string
 ) {
+  const finalRedirectUrl =
+    redirectUrl || `${getBaseUrl()}/dashboard/financial/callback`;
   try {
     const appUser = await getCurrentAppUser();
     if (!appUser) {
@@ -342,13 +359,13 @@ export async function createGoCardlessRequisition(
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
       },
-              body: JSON.stringify({
-          redirect: redirectUrl,
-          institution_id: institutionId,
-          agreement: agreement.id,
-          reference: `family-${familyId}-${Date.now()}`,
-          user_language: "EN",
-        }),
+      body: JSON.stringify({
+        redirect: finalRedirectUrl,
+        institution_id: institutionId,
+        agreement: agreement.id,
+        reference: `family-${familyId}-${Date.now()}`,
+        user_language: "EN",
+      }),
     });
 
     if (!response.ok) {
@@ -643,8 +660,11 @@ export async function completeGoCardlessConnection(
 
         // Step 6c: Import initial transactions for this account
         try {
-          const transactionData = await getAccountTransactions(accountId, accessToken);
-          
+          const transactionData = await getAccountTransactions(
+            accountId,
+            accessToken
+          );
+
           // Import booked transactions
           if (transactionData.transactions.booked) {
             for (const transaction of transactionData.transactions.booked) {
@@ -671,7 +691,10 @@ export async function completeGoCardlessConnection(
             }
           }
         } catch (transactionError) {
-          console.warn(`Failed to import transactions for account ${accountId}:`, transactionError);
+          console.warn(
+            `Failed to import transactions for account ${accountId}:`,
+            transactionError
+          );
           // Continue with account creation even if transaction import fails
         }
 
@@ -694,9 +717,9 @@ export async function completeGoCardlessConnection(
     const totalTransactions = await prisma.transaction.count({
       where: {
         accountId: {
-          in: createdAccounts.map(acc => acc.id)
-        }
-      }
+          in: createdAccounts.map((acc) => acc.id),
+        },
+      },
     });
 
     return {
@@ -825,23 +848,79 @@ export async function importGoCardlessTransactions(
 /**
  * Process a single GoCardless transaction
  */
+interface ConnectedAccountWithFinancialAccount {
+  id: string;
+  providerAccountId: string;
+  accountName: string;
+  accountType: string;
+  accountSubtype: string | null;
+  iban: string | null;
+  connectionId: string;
+  financialAccountId: string | null;
+  financialAccount: {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    name: string;
+    familyId: string;
+    description: string | null;
+    currency: string;
+    type: AccountType;
+    balance: Prisma.Decimal;
+    isActive: boolean;
+    institution: string | null;
+    accountNumber: string | null;
+    color: string | null;
+  } | null;
+}
+
 async function processGoCardlessTransaction(
   transaction: Transaction,
-  connectedAccount: any,
+  connectedAccount: ConnectedAccountWithFinancialAccount,
   familyId: string,
   isPending: boolean,
   prisma: PrismaClient
 ) {
+  if (
+    !connectedAccount.financialAccount ||
+    !connectedAccount.financialAccountId
+  ) {
+    throw new Error("Connected account missing financial account information");
+  }
   // Create unique transaction ID for GoCardless
+  // If no transactionId from GoCardless, create a deterministic fallback
   const transactionId =
     transaction.transactionId ||
-    `${connectedAccount.providerAccountId}-${transaction.bookingDate || transaction.valueDate}-${transaction.transactionAmount?.amount}-${Math.random()}`;
+    (() => {
+      const baseData = [
+        connectedAccount.providerAccountId,
+        transaction.bookingDate || transaction.valueDate,
+        transaction.transactionAmount?.amount,
+        transaction.remittanceInformationUnstructured ||
+          transaction.remittanceInformationStructured ||
+          "",
+        transaction.creditorName || transaction.debtorName || "",
+        transaction.endToEndId || "",
+      ]
+        .filter(Boolean)
+        .join("-");
+
+      // Create a simple hash for shorter, more consistent IDs
+      let hash = 0;
+      for (let i = 0; i < baseData.length; i++) {
+        const char = baseData.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+
+      return `gocardless-${Math.abs(hash)}`;
+    })();
 
   // Check if transaction already exists
   const existingTransaction = await prisma.transaction.findFirst({
     where: {
       plaidTransactionId: transactionId,
-      accountId: connectedAccount.financialAccount.id,
+      accountId: connectedAccount.financialAccountId,
     },
   });
 
@@ -880,7 +959,7 @@ async function processGoCardlessTransaction(
       amount: Math.abs(amount),
       type: transactionType,
       status: "NEEDS_CATEGORIZATION",
-      accountId: connectedAccount.financialAccount.id,
+      accountId: connectedAccount.financialAccountId,
       familyId,
       // GoCardless-specific fields stored in existing Plaid fields
       plaidTransactionId: transactionId,
