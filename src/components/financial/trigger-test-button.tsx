@@ -2,20 +2,20 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Zap, 
-  Play, 
-  Calendar, 
-  Sync, 
-  AlertCircle, 
-  CheckCircle, 
+import {
+  Zap,
+  Play,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
   ExternalLink,
   Clock,
   Coins,
   Link2,
-  CreditCard
+  CreditCard,
+  RefreshCcw,
 } from "lucide-react";
-import { 
+import {
   testTriggerPlaidTransactionImport,
   testTriggerGoCardlessTransactionImport,
   testTriggerPlaidBalanceSync,
@@ -24,7 +24,7 @@ import {
   testTriggerBothProvidersBalanceSync,
   testTriggerPlaidConnection,
   testTriggerGoCardlessConnection,
-  testTriggerBothProvidersConnection
+  testTriggerBothProvidersConnection,
 } from "@/actions/trigger-test-actions";
 import { toast } from "sonner";
 import {
@@ -42,10 +42,10 @@ interface TriggerTestButtonProps {
   size?: "default" | "sm" | "lg";
 }
 
-export function TriggerTestButton({ 
-  onSuccess, 
-  variant = "outline", 
-  size = "default" 
+export function TriggerTestButton({
+  onSuccess,
+  variant = "outline",
+  size = "default",
 }: TriggerTestButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [activeOperation, setActiveOperation] = useState<string | null>(null);
@@ -57,18 +57,18 @@ export function TriggerTestButton({
     try {
       setIsLoading(true);
       setActiveOperation(operationName);
-      
+
       const result = await operation();
-      
+
       if (result.success) {
         toast.success(result.message, {
           icon: <CheckCircle className="h-4 w-4" />,
           description: result.url ? (
             <div className="flex items-center gap-1 mt-1">
               <ExternalLink className="h-3 w-3" />
-              <a 
-                href={result.url} 
-                target="_blank" 
+              <a
+                href={result.url}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs underline hover:no-underline"
               >
@@ -102,9 +102,9 @@ export function TriggerTestButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant={variant} 
-          size={size} 
+        <Button
+          variant={variant}
+          size={size}
           disabled={isLoading}
           className="flex items-center gap-2"
         >
@@ -121,17 +121,19 @@ export function TriggerTestButton({
           Test async background tasks
         </div>
         <DropdownMenuSeparator />
-        
+
         {/* Transaction Import Tests */}
         <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
           Transaction Import
         </DropdownMenuLabel>
-        
-        <DropdownMenuItem 
-          onClick={() => handleOperation(
-            () => testTriggerPlaidTransactionImport(7),
-            "Plaid Import (7d)"
-          )}
+
+        <DropdownMenuItem
+          onClick={() =>
+            handleOperation(
+              () => testTriggerPlaidTransactionImport(7),
+              "Plaid Import (7d)"
+            )
+          }
           disabled={isLoading}
           className="flex items-center justify-between"
         >
@@ -143,12 +145,14 @@ export function TriggerTestButton({
             <Clock className="h-3 w-3 animate-spin" />
           )}
         </DropdownMenuItem>
-        
-        <DropdownMenuItem 
-          onClick={() => handleOperation(
-            () => testTriggerGoCardlessTransactionImport(7),
-            "GoCardless Import (7d)"
-          )}
+
+        <DropdownMenuItem
+          onClick={() =>
+            handleOperation(
+              () => testTriggerGoCardlessTransactionImport(7),
+              "GoCardless Import (7d)"
+            )
+          }
           disabled={isLoading}
           className="flex items-center justify-between"
         >
@@ -160,12 +164,14 @@ export function TriggerTestButton({
             <Clock className="h-3 w-3 animate-spin" />
           )}
         </DropdownMenuItem>
-        
-        <DropdownMenuItem 
-          onClick={() => handleOperation(
-            () => testTriggerBothProvidersTransactionImport(30),
-            "Both Providers Import (30d)"
-          )}
+
+        <DropdownMenuItem
+          onClick={() =>
+            handleOperation(
+              () => testTriggerBothProvidersTransactionImport(30),
+              "Both Providers Import (30d)"
+            )
+          }
           disabled={isLoading}
           className="flex items-center justify-between font-medium"
         >
@@ -177,53 +183,59 @@ export function TriggerTestButton({
             <Clock className="h-3 w-3 animate-spin" />
           )}
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
+
         {/* Balance Sync Tests */}
         <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
           Balance Sync
         </DropdownMenuLabel>
-        
-        <DropdownMenuItem 
-          onClick={() => handleOperation(
-            () => testTriggerPlaidBalanceSync(),
-            "Plaid Balance Sync"
-          )}
+
+        <DropdownMenuItem
+          onClick={() =>
+            handleOperation(
+              () => testTriggerPlaidBalanceSync(),
+              "Plaid Balance Sync"
+            )
+          }
           disabled={isLoading}
           className="flex items-center justify-between"
         >
           <div className="flex items-center">
-            <Sync className="mr-2 h-4 w-4" />
+            <RefreshCcw className="mr-2 h-4 w-4" />
             Plaid Balances
           </div>
           {isLoading && activeOperation === "Plaid Balance Sync" && (
             <Clock className="h-3 w-3 animate-spin" />
           )}
         </DropdownMenuItem>
-        
-        <DropdownMenuItem 
-          onClick={() => handleOperation(
-            () => testTriggerGoCardlessBalanceSync(),
-            "GoCardless Balance Sync"
-          )}
+
+        <DropdownMenuItem
+          onClick={() =>
+            handleOperation(
+              () => testTriggerGoCardlessBalanceSync(),
+              "GoCardless Balance Sync"
+            )
+          }
           disabled={isLoading}
           className="flex items-center justify-between"
         >
           <div className="flex items-center">
-            <Sync className="mr-2 h-4 w-4" />
+            <RefreshCcw className="mr-2 h-4 w-4" />
             GoCardless Balances
           </div>
           {isLoading && activeOperation === "GoCardless Balance Sync" && (
             <Clock className="h-3 w-3 animate-spin" />
           )}
         </DropdownMenuItem>
-        
-        <DropdownMenuItem 
-          onClick={() => handleOperation(
-            () => testTriggerBothProvidersBalanceSync(),
-            "Both Providers Balance Sync"
-          )}
+
+        <DropdownMenuItem
+          onClick={() =>
+            handleOperation(
+              () => testTriggerBothProvidersBalanceSync(),
+              "Both Providers Balance Sync"
+            )
+          }
           disabled={isLoading}
           className="flex items-center justify-between font-medium"
         >
@@ -235,19 +247,21 @@ export function TriggerTestButton({
             <Clock className="h-3 w-3 animate-spin" />
           )}
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
+
         {/* Bank Connection Tests */}
         <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
           Bank Connections (Mock Data)
         </DropdownMenuLabel>
-        
-        <DropdownMenuItem 
-          onClick={() => handleOperation(
-            () => testTriggerPlaidConnection(),
-            "Plaid Connection Test"
-          )}
+
+        <DropdownMenuItem
+          onClick={() =>
+            handleOperation(
+              () => testTriggerPlaidConnection(),
+              "Plaid Connection Test"
+            )
+          }
           disabled={isLoading}
           className="flex items-center justify-between"
         >
@@ -259,12 +273,14 @@ export function TriggerTestButton({
             <Clock className="h-3 w-3 animate-spin" />
           )}
         </DropdownMenuItem>
-        
-        <DropdownMenuItem 
-          onClick={() => handleOperation(
-            () => testTriggerGoCardlessConnection(),
-            "GoCardless Connection Test"
-          )}
+
+        <DropdownMenuItem
+          onClick={() =>
+            handleOperation(
+              () => testTriggerGoCardlessConnection(),
+              "GoCardless Connection Test"
+            )
+          }
           disabled={isLoading}
           className="flex items-center justify-between"
         >
@@ -276,12 +292,14 @@ export function TriggerTestButton({
             <Clock className="h-3 w-3 animate-spin" />
           )}
         </DropdownMenuItem>
-        
-        <DropdownMenuItem 
-          onClick={() => handleOperation(
-            () => testTriggerBothProvidersConnection(),
-            "Both Providers Connection Test"
-          )}
+
+        <DropdownMenuItem
+          onClick={() =>
+            handleOperation(
+              () => testTriggerBothProvidersConnection(),
+              "Both Providers Connection Test"
+            )
+          }
           disabled={isLoading}
           className="flex items-center justify-between font-medium"
         >
@@ -289,13 +307,14 @@ export function TriggerTestButton({
             <CreditCard className="mr-2 h-4 w-4" />
             Both Connections
           </div>
-          {isLoading && activeOperation === "Both Providers Connection Test" && (
-            <Clock className="h-3 w-3 animate-spin" />
-          )}
+          {isLoading &&
+            activeOperation === "Both Providers Connection Test" && (
+              <Clock className="h-3 w-3 animate-spin" />
+            )}
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
+
         <div className="px-2 py-1.5 text-xs text-muted-foreground">
           ⚡ Tasks run async in background
           <br />
